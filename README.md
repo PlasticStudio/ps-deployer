@@ -1,5 +1,18 @@
 # ps-deployer
 
+## Set up SiteHost ready for Deployer
+
+1. Create new container in SiteHost
+2. Create new ssh user
+3. Click to assign all dev's public keys 
+4. When container created - ssh in using ssh user you created and container ip address `ssh user@111.222.333`
+5. Generate ssh keypair and copy pub key to the github project `https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent`
+6. `ssh -T git@github.com`  to authenticate and add to hosts
+7. `nano /container/config/apache2/sites-available/000-default.conf` to edit apache config
+8. Change `/var/www/html/public/` to `/var/www/html/current` (this occurs on two lines), this will change the webroot to be deployers output directory
+9. In the SiteHost Web UI - Reset container
+
+
 ## Deployments
 
 We use [Deployer](https://deployer.org/) for deployments, which can be installed either globally (recommended):
