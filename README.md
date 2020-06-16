@@ -65,3 +65,12 @@ dep deploy --branch=dev
 # Deploy tag 1.0.1 to production
 dep deploy production --tag=1.0.1
 ```
+
+
+### Database and assets
+
+#### Assets
+`scp assets.tar.gz user@domain.co.nz:/container/application/shared`
+
+#### database
+Sitehost UI -> databases -> click the 3 dots -> database admin 
