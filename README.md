@@ -26,6 +26,16 @@ chmod +x /usr/local/bin/dep
 or comes with PS docker image
 
 
+### SS3 notes
+update deploy.php share file from `.env` to `_ss_environment.php`
+
+note file mapping path of `_ss_enviornment.php` file
+```
+// This is used by sake to know which directory points to which URL
+global $_FILE_TO_URL_MAPPING;
+$_FILE_TO_URL_MAPPING[realpath('/container/application/release')] = 'http://mta-test.plasticstudio.co.nz';
+```
+
 ### Deploying a site
 
 It’s as easy as `dep deploy`.
