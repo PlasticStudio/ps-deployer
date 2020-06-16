@@ -15,6 +15,7 @@
 
 ## Deployments
 
+### Manual install (non docker)
 We use [Deployer](https://deployer.org/) for deployments, which can be installed either globally (recommended):
 
 ```bash
@@ -23,7 +24,10 @@ mv deployer.phar /usr/local/bin/dep
 chmod +x /usr/local/bin/dep
 ```
 
-or comes with PS docker image
+### Docker
+Deployer comes with ps docker image.
+
+make sure to include `- ~/.ssh:/tmp/.ssh:ro` as a mounted volume in the docker-compose.yml 
 
 
 ### SS3 notes
