@@ -9,6 +9,8 @@ set('ssh_multiplexing', true);
 set('writable_mode', 'chmod');
 set('forwardAgent', false);
 set('deploy_path', '/container/application');
+set('db_backup_path', '/container/backups/latest/databases/');
+set('assets_backup_path', '/container/backups/latest/application/shared/assets');
 set('keep_releases', 5);
 
 //Staging
@@ -16,14 +18,16 @@ host('sitehost-domain.co.nz')
     ->user('stagesshuser')
     ->stage('staging')
     ->roles('app')
-    ->set('http_user', 'stagesshuser');
+    ->set('http_user', 'stagesshuser')
+    ->set('remote_user', 'stagesshuser');
 
 //Production
 // host('convex-prod.plasticstudio.co.nz')
 //     ->user('convexproduser')
 //     ->stage('production')
 //     ->roles('app')
-//     ->set('http_user', 'convexproduser');
+//     ->set('http_user', 'convexproduser')
+//     ->set('remote_user', 'convexproduser');
 
 /**
  * Silverstripe configuration
@@ -78,6 +82,27 @@ task( 'confirm', function () {
 		die;
 	}
 } )->onStage( 'production' );
+
+task('savefromremote', [
+    'savefromremote:db',
+    'savefromremote:assets'
+]);
+
+task('savefromremote:db', function () {
+    writeln('<info>Retrieving db from SiteHost</info>');
+    writeln( '<comment>Running rsync command "rsync -avhzrP {{remote_user}}@{{hostname}}:{{db_backup_path}} ./from-remote/"</comment>' );
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -aqzrP {{remote_user}}@{{hostname}}:{{db_backup_path}} ./from-remote/' , ['timeout' => 1800]);
+    writeln('<info>Done!</info>');
+});
+
+task('savefromremote:assets', function () {
+    writeln('<info>Retrieving assets from SiteHost</info>');
+    writeln( '<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{hostname}}:{{assets_backup_path}} ./from-remote/</comment>' );
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -aqzrP {{remote_user}}@{{hostname}}:{{assets_backup_path}} ./from-remote/', ['timeout' => 1800]);    
+    writeln('<info>Done!</info>');
+});
 
 // task('sspak:save', function () {
 //     $file = ask('Which sspak file?');
