@@ -9,8 +9,10 @@ set('ssh_multiplexing', true);
 set('writable_mode', 'chmod');
 set('forwardAgent', false);
 set('deploy_path', '/container/application');
-set('db_backup_path', '/container/backups/latest/databases/');
-set('assets_backup_path', '/container/backups/latest/application/shared/assets');
+set('remote_db_backup_path', '/container/backups/latest/databases/');
+set('remote_assets_backup_path', '/container/backups/latest/application/shared/assets'); //no trailing slash is important
+set('remote_assets_path', '/container/application/shared/assets/');
+set('local_assets_path', '/var/www/html/assets/');
 set('keep_releases', 5);
 
 //Staging
@@ -90,17 +92,25 @@ task('savefromremote', [
 
 task('savefromremote:db', function () {
     writeln('<info>Retrieving db from SiteHost</info>');
-    writeln( '<comment>Running rsync command "rsync -avhzrP {{remote_user}}@{{hostname}}:{{db_backup_path}} ./from-remote/"</comment>' );
+    writeln( '<comment>Running rsync command "rsync -avhzrP {{remote_user}}@{{hostname}}:{{remote_db_backup_path}} ./from-remote/"</comment>' );
     //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
-    runLocally('rsync -aqzrP {{remote_user}}@{{hostname}}:{{db_backup_path}} ./from-remote/' , ['timeout' => 1800]);
+    runLocally('rsync -aqzrP {{remote_user}}@{{hostname}}:{{remote_db_backup_path}} ./from-remote/' , ['timeout' => 1800]);
     writeln('<info>Done!</info>');
 });
 
 task('savefromremote:assets', function () {
-    writeln('<info>Retrieving assets from SiteHost</info>');
-    writeln( '<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{hostname}}:{{assets_backup_path}} ./from-remote/</comment>' );
+    writeln('<info>Save assets from SiteHost</info>');
+    writeln( '<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{hostname}}:{{remote_assets_backup_path}} ./from-remote/</comment>' );
     //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
-    runLocally('rsync -aqzrP {{remote_user}}@{{hostname}}:{{assets_backup_path}} ./from-remote/', ['timeout' => 1800]);    
+    runLocally('rsync -avhzrP  {{remote_user}}@{{hostname}}:{{remote_assets_backup_path}} ./from-remote/', ['timeout' => 1800]);    
+    writeln('<info>Done!</info>');
+});
+
+task('loadtoremote:assets', function () {
+    writeln('<info>Load assets to SiteHost</info>');
+    writeln( '<comment>Running rsync command rsync -avhn --delete {{local_assets_path}} {{remote_user}}@{{hostname}}:{{remote_assets_path}}</comment>' );
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -avhn --delete /var/www/html/{{shared_assets}}/ {{remote_user}}@{{hostname}}:{{remote_assets_path}}', ['timeout' => 1800]);    
     writeln('<info>Done!</info>');
 });
 
