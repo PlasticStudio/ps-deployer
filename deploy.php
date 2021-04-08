@@ -124,6 +124,8 @@ task('savefromremote:assets', function () {
 task('loadtoremote:assets', function () {
 	writeln('<info>Backing up remote assets to temporary directory</info>');
 	writeln('<comment>Running mv assets/ assets-backup/</comment>');
+	//Make assets directory if not exists
+	run('mkdir -p {{remote_assets_path}}');
 	run('mv {{remote_assets_path}} /container/application/shared/assets-backup');
 	writeln('<info>Backup copy complete.</info>');
 	writeln('<info>------------------------------------------------------------</info>');
