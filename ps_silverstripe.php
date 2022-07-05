@@ -16,18 +16,18 @@ set('deploy_path', '/container/application');
 set('identity_file', '~/.ssh/id_rsa');
 
 
-//Staging
-host('skeletor.shuat.plasticstudio.co')
-    ->set('labels', ['stage' => 'uat'])
-    ->set('http_user', 'skeletoruser')
-    ->set('remote_user', 'skeletoruser');
+// //Staging
+// host('skeletor.shuat.plasticstudio.co')
+//     ->set('labels', ['stage' => 'uat'])
+//     ->set('http_user', 'skeletoruser')
+//     ->set('remote_user', 'skeletoruser');
 
 
-//Production
-host('skeletor.sh5.plasticstudio.co')
-    ->set('labels', ['stage' => 'prod'])
-    ->set('http_user', 'skeleproduser')
-    ->set('remote_user', 'skeleproduser');
+// //Production
+// host('skeletor.sh5.plasticstudio.co')
+//     ->set('labels', ['stage' => 'prod'])
+//     ->set('http_user', 'skeleproduser')
+//     ->set('remote_user', 'skeleproduser');
 
 // task('testme', function () {
 //     writeln('test here' . getenv('SS_DATABASE_NAME'));
