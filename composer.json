@@ -9,5 +9,10 @@
       "email": "joe@psdigital.co.nz"
     }
   ],
+  "autoload": {
+    "files": [
+      "ps_silverstripe.php"
+    ]
+  },
   "require": {}
 }
