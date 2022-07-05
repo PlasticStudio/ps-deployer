@@ -4,35 +4,12 @@ namespace Deployer;
 
 require 'recipe/common.php';
 
-set('repository', 'git@github.com:PlasticStudio/skeletor.git');
-set('writable_mode', 'chmod');
-set('remote_db_backup_path', '/container/backups/latest/databases/');
-set('remote_assets_backup_path', '/container/backups/latest/application/shared/public/assets'); //no trailing slash is important
-set('remote_assets_path', '/container/application/shared/public/assets/');
-set('local_assets_path', '/var/www/html/public/assets/');
 set('keep_releases', 5);
-set('current_path', '/container/application/public');
+
+set('writable_mode', 'chmod');
 set('deploy_path', '/container/application');
+set('current_path', '/container/application/public');
 set('identity_file', '~/.ssh/id_rsa');
-
-
-// //Staging
-// host('skeletor.shuat.plasticstudio.co')
-//     ->set('labels', ['stage' => 'uat'])
-//     ->set('http_user', 'skeletoruser')
-//     ->set('remote_user', 'skeletoruser');
-
-
-// //Production
-// host('skeletor.sh5.plasticstudio.co')
-//     ->set('labels', ['stage' => 'prod'])
-//     ->set('http_user', 'skeleproduser')
-//     ->set('remote_user', 'skeleproduser');
-
-// task('testme', function () {
-//     writeln('test here' . getenv('SS_DATABASE_NAME'));
-//     run('whoami');
-// });
 
 task('prepare:sitehost', function () {
     //TODO: Set up sitehost container via api
@@ -40,9 +17,9 @@ task('prepare:sitehost', function () {
 
     //If the public folder is a directory and not a symlink, then we need to remove it
     //This should only happen on creation of a server
-    if (test('[ ! -L /container/application/public ] && [ -d /container/application/public ]')) {
+    if (test('[ ! -L {{current_path}} ] && [ -d {{current_path}} ]')) {
         writeln('Public web root is a Directory - So we can symlink this on deployment');
-        run('rm -rf /container/application/public');
+        run('rm -rf {{current_path}}');
     } else {
         writeln('Public web root is a symlink - skipping');
     }
@@ -62,6 +39,7 @@ task('prepare:sitehost', function () {
     //Update php config to default
     if (test('[ ! -f ~/container/config/php/conf.d/ps-custom.ini ]')) {
         writeln('No default custom php has been configured');
+        writeln('Creating "~/container/config/php/conf.d/ps-custom.ini" and adding defaults');
         run('echo "memory_limit=256M" >> ~/container/config/php/conf.d/ps-custom.ini');
     //TODO: POST_MAX
         //TODO: EXECUTION TIME
