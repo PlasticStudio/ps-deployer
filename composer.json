@@ -10,9 +10,9 @@
     }
   ],
   "autoload": {
-    "files": [
-      "ps_silverstripe.php"
-    ]
+    "psr-4": {
+      "PlasticStudio\\Search\\": "src/"
+    }
   },
   "require": {}
 }

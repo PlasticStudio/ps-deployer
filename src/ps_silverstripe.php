@@ -1,6 +1,6 @@
 <?php
 
-namespace Deployer;
+namespace PlasticStudio\Deployer;
 
 require 'recipe/common.php';
 
