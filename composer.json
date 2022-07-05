@@ -11,7 +11,7 @@
   ],
   "autoload": {
     "psr-4": {
-      "PlasticStudio\\Search\\": "src/"
+      "PlasticStudio\\Deployer\\": "src/"
     }
   },
   "require": {}
