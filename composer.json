@@ -12,7 +12,10 @@
   "autoload": {
     "psr-4": {
       "PlasticStudio\\Deployer\\": "src/"
-    }
+    },
+    "files": [
+      "src/ps_silverstripe.php"
+    ]
   },
   "require": {}
 }
