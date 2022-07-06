@@ -15,7 +15,6 @@ namespace Deployer;
 require 'vendor/plasticstudio/ps-deployer/ps_silverstripe.php';
 
 set('repository', 'git@github.com:PlasticStudio/skeletor.git');
-set('remote_db_backup_path', '/container/backups/latest/databases/');
 set('remote_assets_backup_path', '/container/backups/latest/application/shared/public/assets'); //no trailing slash is important
 set('remote_assets_path', '/container/application/shared/public/assets/');
 set('local_assets_path', '/var/www/html/public/assets/');
