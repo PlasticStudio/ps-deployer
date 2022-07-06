@@ -4,6 +4,16 @@
 
 todo
 
+need to specifiy release number first time after migrating
+
+```
+dep deploy -o release_name=43
+```
+
+```
+set('current_path', '/container/application/current');
+```
+
 
 ## Set up
 
@@ -18,6 +28,8 @@ namespace Deployer;
 
 require 'vendor/plasticstudio/ps-deployer/ps_silverstripe.php';
 
+//Legacy deployer v6 path to use
+//set('current_path', '/container/application/current');
 set('repository', 'git@github.com:PlasticStudio/skeletor.git');
 set('remote_assets_backup_path', '/container/backups/latest/application/shared/public/assets'); //no trailing slash is important
 set('remote_assets_path', '/container/application/shared/public/assets/');
@@ -68,7 +80,11 @@ make sure to include `- ~/.ssh:/tmp/.ssh:ro` as a mounted volume in the docker-c
 
 todo update
 
-It’s as easy as `dep deploy`.
+It’s as easy as `dep deploy`.  will get current git HEAD branch as default branch to deploy.
+
+```
+dep deploy stage=prod --branch=master
+```
 
 On the first deploy, you’ll probably want to include the database and assets:
 
