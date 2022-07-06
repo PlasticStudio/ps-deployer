@@ -1,28 +1,47 @@
 # ps-deployer
 
+
+## Set up
+
+`composer require PlasticStudio/ps-deployer`
+
+Create a new `deploy.php` file with the following contents and update where required:
+
+```
+<?php
+
+namespace Deployer;
+
+require 'vendor/plasticstudio/ps-deployer/ps_silverstripe.php';
+
+set('repository', 'git@github.com:PlasticStudio/skeletor.git');
+set('remote_db_backup_path', '/container/backups/latest/databases/');
+set('remote_assets_backup_path', '/container/backups/latest/application/shared/public/assets'); //no trailing slash is important
+set('remote_assets_path', '/container/application/shared/public/assets/');
+set('local_assets_path', '/var/www/html/public/assets/');
+
+//Staging
+host('uat.domain.co.nz')
+    ->set('labels', ['stage' => 'uat'])
+    ->set('http_user', 'uatuser')
+    ->set('remote_user', 'uatuser');
+
+
+//Production
+host('production.domain.co.nz')
+    ->set('labels', ['stage' => 'prod'])
+    ->set('http_user', 'produser')
+    ->set('remote_user', 'uatuser');
+
+```
+
+
+
 ## Set up SiteHost ready for Deployer
 
-1. Create new container in SiteHost
-2. Create new ssh user
-3. Click to assign all dev's public keys 
-4. When container created - ssh in using ssh user you created and container ip address `ssh user@111.222.333`
-5. Generate ssh keypair and copy pub key to the github project `https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent`
-6. `ssh -T git@github.com`  to authenticate and add to hosts
-7. `nano /container/config/apache2/sites-available/000-default.conf` to edit apache config
-8. Change `/var/www/html/public/` to `/var/www/html/current` (this occurs on two lines), this will change the webroot to be deployers output directory
-9. In the SiteHost Web UI - Reset container
-
+todo
 
 ## Deployments
-
-### Manual install (non docker)
-We use [Deployer](https://deployer.org/) for deployments, which can be installed either globally (recommended):
-
-```bash
-curl -LO https://deployer.org/deployer.phar
-mv deployer.phar /usr/local/bin/dep
-chmod +x /usr/local/bin/dep
-```
 
 ### Docker
 Deployer comes with ps docker image.
@@ -30,17 +49,9 @@ Deployer comes with ps docker image.
 make sure to include `- ~/.ssh:/tmp/.ssh:ro` as a mounted volume in the docker-compose.yml 
 
 
-### SS3 notes
-update deploy.php share file from `.env` to `_ss_environment.php`
-
-note file mapping path of `_ss_enviornment.php` file
-```
-// This is used by sake to know which directory points to which URL
-global $_FILE_TO_URL_MAPPING;
-$_FILE_TO_URL_MAPPING[realpath('/container/application/release')] = 'http://mta-test.plasticstudio.co.nz';
-```
-
 ### Deploying a site
+
+todo update
 
 It’s as easy as `dep deploy`.
 
@@ -54,6 +65,8 @@ You’ll also be asked (the first time you deploy to a given stage) to provide d
 
 #### Deploying to production
 
+todo update
+
 Much the same as deploying to staging, just provide a third argument to select the stage (either `staging` or `production`):
 
 ```
@@ -61,6 +74,8 @@ dep deploy production
 ```
 
 #### Deploy a branch/tag
+
+todo update
 
 ```
 # Deploy the dev branch
@@ -73,8 +88,9 @@ dep deploy production --tag=1.0.1
 
 ### Database and assets
 
+todo update
+
 #### Assets
-`scp assets.tar.gz user@domain.co.nz:/container/application/shared`
+
 
 #### database
-Sitehost UI -> databases -> click the 3 dots -> database admin 

@@ -1,0 +1,13 @@
+{
+  "name": "plasticstudio/ps-deployer",
+  "homepage": "https://psdigital.co.nz",
+  "description": "This is the base module for deployer recipe ",
+  "authors": [
+    {
+      "name": "Joseph Lewis",
+      "homepage": "https://psdigital.co.nz",
+      "email": "joe@psdigital.co.nz"
+    }
+  ],
+  "require": {}
+}
