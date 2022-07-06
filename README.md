@@ -39,6 +39,18 @@ host('production.domain.co.nz')
 ## Set up SiteHost ready for Deployer
 
 todo
+follow guru card to set up, then you can run this command - this only needs to be run once
+
+`dep prepare:sitehost`
+
+This will:
+
+- Delete public directory which is created on first creation of a Sitehost server, so we can use this path as a symlink
+- Generates ssh key which you can copy to deployment keys on github project
+- Create php default config 
+
+
+
 
 ## Deployments
 
