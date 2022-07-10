@@ -1,7 +1,7 @@
 {
   "name": "plasticstudio/ps-deployer",
   "homepage": "https://psdigital.co.nz",
-  "description": "This is the base module for deployer recipe ",
+  "description": "This is the base module for deployer recipe - tailored for our setup on sitehost ",
   "authors": [
     {
       "name": "Joseph Lewis",
