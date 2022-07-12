@@ -2,12 +2,9 @@
 
 ## Important
 
-To continue using old deployer set up
-Uncomment this line in the deployer file. This will make deployer use the old directory of "current"
+To keep normal set up - add to your docker file environment
 
-```
-//set('current_path', '/container/application/current');
-```
+`- DEPLOYER_VERSION=6.8.0`
 
 ## Migrate from v6 to 7
 
@@ -113,58 +110,47 @@ This will:
 
 ## Deployments
 
+
+### Deploying a site
+
+It’s as easy as `dep deploy`.  This will give you the option of which host to deploy to and will get current git HEAD to deploy.
+
+```
+dep deploy stage=uat
+```
+
+```
+# Deploy the dev branch
+dep deploy stage=uat --branch=master
+
+
+# Deploy tag 1.0.1 to production
+dep deploy stage=prod --tag=1.0.1
+```
+
+
+### Database and assets
+
+Make sure your `deployer.php` paths are set up correctly
+
+Save both db and assets from remote
+`dep savefromremote`
+
+Saves the most recent backup i.e. previous nights DB
+`dep savefromremote:db`
+
+Saves the most recent backup i.e. previous nights Assets
+`dep savefromremote:assets`
+
+Makes a temporary copy of current live assets, rolls back to this if there is a transfer issue.
+`loadtoremote:assets`
+
+
+
 ### Docker
 Deployer comes with ps docker image.
 
 make sure to include `- ~/.ssh:/tmp/.ssh:ro` as a mounted volume in the docker-compose.yml 
 
 
-### Deploying a site
-
-todo update
-
-It’s as easy as `dep deploy`.  will get current git HEAD branch as default branch to deploy.
-
-```
-dep deploy stage=prod --branch=master
-```
-
-On the first deploy, you’ll probably want to include the database and assets:
-
-```
-dep deploy
-```
-
-You’ll also be asked (the first time you deploy to a given stage) to provide database credentials used to populate `.env`.
-
-#### Deploying to production
-
-todo update
-
-Much the same as deploying to staging, just provide a third argument to select the stage (either `staging` or `production`):
-
-```
-dep deploy production
-```
-
-#### Deploy a branch/tag
-
-todo update
-
-```
-# Deploy the dev branch
-dep deploy --branch=dev
-
-# Deploy tag 1.0.1 to production
-dep deploy production --tag=1.0.1
-```
-
-
-### Database and assets
-
-todo update
-
-#### Assets
-
-
-#### database
+Keep old version of 
