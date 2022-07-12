@@ -12,10 +12,21 @@ set('deploy_path', '/container/application');
 set('current_path', '/container/application/public');
 set('identity_file', '~/.ssh/id_rsa');
 
-task('prepare:sitehost', function () {
-    //TODO: Set up sitehost container via api
+task('sitehost:prepare', [
+    'sitehost:symlink',
+    'sitehost:ssh',
+    'sitehost:phpconfig'
+]);
+
+//Future default .env file based on inputs, this might need to be in "first"
+//TODO: Set up sitehost container via api
 
 
+
+/**
+ * Sitehost
+ */
+task('sitehost:symlink', function () {
     //If the public folder is a directory and not a symlink, then we need to remove it
     //This should only happen on creation of a server
     if (test('[ ! -L {{current_path}} ] && [ -d {{current_path}} ]')) {
@@ -24,7 +35,12 @@ task('prepare:sitehost', function () {
     } else {
         writeln('Public web root is a symlink - skipping');
     }
+});
 
+/**
+ * Sitehost
+ */
+task('sitehost:ssh', function () {
     //Test if ssh keys for deployments have been generated.
     if (test('[ ! -f ~/.ssh/id_rsa ]')) {
         writeln('Generating new ssh key');
@@ -36,7 +52,12 @@ task('prepare:sitehost', function () {
         run('cat ~/.ssh/id_rsa.pub', ['real_time_output' => true]);
         writeln('Copy this key to the projects deploy keys on github');
     }
+});
 
+/**
+ * Sitehost
+ */
+task('sitehost:phpconfig', function () {
     //Update php config to default
     if (test('[ ! -f ~/container/config/php/conf.d/ps-custom.ini ]')) {
         writeln('No default custom php has been configured');
@@ -48,9 +69,9 @@ task('prepare:sitehost', function () {
     } else {
         writeln('php has been configured - skipping');
     }
-
-    //Future default .env file based on inputs, this might need to be in "first"
 });
+
+
 
 /**
  * Silverstripe configuration
