@@ -15,7 +15,8 @@ set('identity_file', '~/.ssh/id_rsa');
 task('sitehost:prepare', [
     'sitehost:symlink',
     'sitehost:ssh',
-    'sitehost:phpconfig'
+    'sitehost:phpconfig',
+    'sitehost:listreleases'
 ]);
 
 //Future default .env file based on inputs, this might need to be in "first"
@@ -64,12 +65,20 @@ task('sitehost:phpconfig', function () {
         writeln('Creating "~/container/config/php/conf.d/ps-custom.ini" and adding defaults');
         run('echo "memory_limit=256M" >> ~/container/config/php/conf.d/ps-custom.ini');
     //TODO: POST_MAX
-        //TODO: EXECUTION TIME
-        //TODO: UPLOAD_MAX
+    //TODO: EXECUTION TIME
+    //TODO: UPLOAD_MAX
     } else {
         writeln('php has been configured - skipping');
     }
 });
+
+/**
+ * Sitehost
+ */
+task('sitehost:listreleases', function () {
+    run('ls ~/container/application/releases', ['real_time_output' => true]);
+});
+
 
 
 
