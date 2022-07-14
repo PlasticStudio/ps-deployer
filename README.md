@@ -51,6 +51,8 @@ To keep normal set up - add to your docker file environment
    
    EXISITING CONTAINER: If this is an existing container then we will need to prepare sitehost. You will want to keep the current path for deploying. Uncomment the below line in your deploy.php file.
    `//set('current_path', '/container/application/current');`
+   
+   UPGRADING CONTAINER: todo
 
 8. If this is an existing container then the final thing we will need to do is on your FIRST deployment, deploy by release_name. This will be the current release +1.
 To find our the current release, ssh into the container and check the releases folder.
