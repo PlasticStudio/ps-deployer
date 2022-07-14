@@ -42,7 +42,8 @@ To keep normal set up - add to your docker file environment
     ```
 
 5. Open files side by side copying across all site specific variables such as user, host, and files paths
-6. NEW CONTAINER: If this is a new container then we will need to prepare sitehost
+6. After copying you can now delete your old `deploy-backup.php`
+7. NEW CONTAINER: If this is a new container then we will need to prepare sitehost
    `dep sitehost:prepare`
    This will delete public folder and have it ready for symlink
    Set up ssh key for you to copy
@@ -51,7 +52,7 @@ To keep normal set up - add to your docker file environment
    EXISITING CONTAINER: If this is an existing container then we will need to prepare sitehost. You will want to keep the current path for deploying. Uncomment the below line in your deploy.php file.
    `//set('current_path', '/container/application/current');`
 
-7. If this is an existing container then the final thing we will need to do is on your FIRST deployment, deploy by release_name. This will be the current release +1.
+8. If this is an existing container then the final thing we will need to do is on your FIRST deployment, deploy by release_name. This will be the current release +1.
 To find our the current release, ssh into the container and check the releases folder.
 ```
 dep deploy -o release_name=43
