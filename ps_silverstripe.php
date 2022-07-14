@@ -219,7 +219,8 @@ task('deploy', [
     'deploy:vendors',
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
-    'deploy:publish'
+    'deploy:publish',
+    'releases'
     // TODO: restart sitehost after deployment
 ]);
 
