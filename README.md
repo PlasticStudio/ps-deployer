@@ -57,7 +57,7 @@ To keep normal set up - add to your docker file environment
 8. If this is an existing container then the final thing we will need to do is on your FIRST deployment, deploy by release_name. This will be the current release +1.
 To find our the current release, ssh into the container and check the releases folder.
 ```
-dep deploy -o release_name=43
+dep deploy stage=uat --branch=master -o release_name=43
 ```
 
 
