@@ -10,7 +10,7 @@ To keep normal set up - add to your docker file environment
 
 
 1. Make sure you are running the latest docker image (you can pull this from inside docker desktop). deployer 7 currently works with 8.1 and 8.0 docker images.
-2. Install the new module `composer require PlasticStudio/ps-deployer` this now contains all the tasks that were present in the old deploy.php
+2. Install the new module `composer require --dev PlasticStudio/ps-deployer ` this now contains all the tasks that were present in the old deploy.php
 3. Rename your `deploy.php` to `deploy-backup.php`
 4. Creaste new `deploy.php` and add below new code all. 
     ```
