@@ -10,8 +10,9 @@ To keep normal set up - add to your docker file environment
 
 
 1. Make sure you are running the latest docker image (you can pull this from inside docker desktop). deployer 7 currently works with 8.1 and 8.0 docker images.
-2. Install the new module `composer require PlasticStudio/ps-deployer`
-3. Update `deploy.php` to new code and update all relevant lines.
+2. Install the new module `composer require PlasticStudio/ps-deployer` this now contains all the tasks that were present in the old deploy.php
+3. Rename your `deploy.php` to `deploy-backup.php`
+4. Creaste new `deploy.php` and add below new code all. 
     ```
     <?php
 
@@ -39,7 +40,9 @@ To keep normal set up - add to your docker file environment
         ->set('http_user', 'produser')
         ->set('remote_user', 'uatuser');
     ```
-4. NEW CONTAINER: If this is a new container then we will need to prepare sitehost
+
+5. Open files side by side copying across all site specific variables such as user, host, and files paths
+6. NEW CONTAINER: If this is a new container then we will need to prepare sitehost
    `dep sitehost:prepare`
    This will delete public folder and have it ready for symlink
    Set up ssh key for you to copy
@@ -48,7 +51,7 @@ To keep normal set up - add to your docker file environment
    EXISITING CONTAINER: If this is an existing container then we will need to prepare sitehost. You will want to keep the current path for deploying. Uncomment the below line in your deploy.php file.
    `//set('current_path', '/container/application/current');`
 
-5. If this is an existing container then the final thing we will need to do is on your FIRST deployment, deploy by release_name. This will be the current release +1.
+7. If this is an existing container then the final thing we will need to do is on your FIRST deployment, deploy by release_name. This will be the current release +1.
 To find our the current release, ssh into the container and check the releases folder.
 ```
 dep deploy -o release_name=43
