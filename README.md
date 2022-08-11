@@ -1,5 +1,26 @@
 # ps-deployer
 
+
+## Quick access commands
+
+`dep deploy stage=uat`
+
+`dep deploy stage=uat --branch=master`
+
+`dep deploy stage=prod --tag=1.0.1`
+
+`dep sitehost:prepare`
+
+`dep sitehost:prepare:deploy stage=uat --branch=master`
+
+`dep savefromremote`
+
+`dep savefromremote:db`
+
+`dep savefromremote:assets`
+
+`loadtoremote:assets`
+
 ## Important
 
 To keep normal set up - add to your docker file environment
@@ -110,6 +131,13 @@ This will:
 - Delete public directory which is created on first creation of a Sitehost server, so we can use this path as a symlink
 - Generates ssh key which you can copy to deployment keys on github project
 - Create php default config 
+
+
+If you are doing a container upgrade on Sitehost then you will want to run this command immediately after 
+
+`dep sitehost:prepare:deploy stage=uat --branch=master`
+
+This will update the config to the defaults and fix the symlink 
 
 
 

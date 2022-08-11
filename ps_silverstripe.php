@@ -19,10 +19,15 @@ task('sitehost:prepare', [
     'sitehost:listreleases'
 ]);
 
+
+//deploy post Sitehost major upgrade
+task('sitehost:prepare:deploy', [
+    'sitehost:prepare',
+    'deploy'
+]);
+
 //Future default .env file based on inputs, this might need to be in "first"
 //TODO: Set up sitehost container via api
-
-
 
 /**
  * Sitehost
@@ -219,10 +224,10 @@ task('deploy', [
     'deploy:vendors',
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
-    'deploy:publish',
-    'releases'
+    'deploy:publish'
     // TODO: restart sitehost after deployment
 ]);
+
 
 // before('deploy', 'what_branch');
 
