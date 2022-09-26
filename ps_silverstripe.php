@@ -81,7 +81,11 @@ task('sitehost:phpconfig', function () {
  * Sitehost
  */
 task('sitehost:listreleases', function () {
-    run('ls ~/container/application/releases', ['real_time_output' => true]);
+    if (test('[ -d ~/container/application/releases ]')) {
+        run('ls ~/container/application/releases', ['real_time_output' => true]);
+    } else {
+        writeln('No releases yet - skipping');
+    }
 });
 
 
