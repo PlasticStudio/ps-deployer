@@ -95,7 +95,7 @@ task('sitehost:listreleases', function () {
  * Silverstripe configuration
  */
 set('shared_assets', function () {
-    if (test('[ -d {{release_path}}/public ]') || test('[ -d {{deploy_path}}/shared/public ]')) {
+    if (test('[ -d {{deploy_path}}/release/public ]') || test('[ -d {{deploy_path}}/shared/public ]')) {
         return 'public/assets';
     }
     return 'assets';
