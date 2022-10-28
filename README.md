@@ -19,7 +19,7 @@
 
 `dep savefromremote:assets`
 
-`loadtoremote:assets`
+`dep loadtoremote:assets`
 
 ## Important
 
