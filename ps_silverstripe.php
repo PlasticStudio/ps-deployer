@@ -68,7 +68,7 @@ task('sitehost:phpconfig', function () {
     if (test('[ ! -f ~/container/config/php/conf.d/ps-custom.ini ]')) {
         writeln('No default custom php has been configured');
         writeln('Creating "~/container/config/php/conf.d/ps-custom.ini" and adding defaults');
-        run('echo "memory_limit=256M" >> ~/container/config/php/conf.d/ps-custom.ini');
+        run('echo "memory_limit=512M" >> ~/container/config/php/conf.d/ps-custom.ini');
     //TODO: POST_MAX
     //TODO: EXECUTION TIME
     //TODO: UPLOAD_MAX
