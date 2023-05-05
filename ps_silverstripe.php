@@ -2,10 +2,12 @@
 
 namespace Deployer;
 
+use Deployer\Exception\GracefulShutdownException;
+
 require 'recipe/common.php';
 
+// set('dotenv', '{{current_path}}/.env');
 set('keep_releases', 5);
-
 set('writable_mode', 'chmod');
 set('remote_db_backup_path', '/container/backups/latest/databases/');
 set('deploy_path', '/container/application');
@@ -88,6 +90,32 @@ task('sitehost:listreleases', function () {
     }
 });
 
+task('sitehost:restartcontainer', function () {
+    if (!has('SITEHOST_API_KEY') || !has('SITEHOST_CLIENT_ID') || !has('SITEHOST_SERVER_NAME') || !has('SITEHOST_STACK_NAME')) {
+        writeln('<error>SKIPPING - SITEHOST_API_KEY, SITEHOST_CLIENT_ID, SITEHOST_SERVER_NAME and SITEHOST_STACK_NAME must be set in the .env to restart container</error>');
+        return;
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://api.sitehost.nz/1.2/cloud/stack/restart.json");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    $body = array(
+        'apikey' => getenv('SITEHOST_API_KEY'),
+        'client_id' => getenv('SITEHOST_CLIENT_ID'),
+        'server' => getenv('SITEHOST_SERVER_NAME'),
+        'name' => getenv('SITEHOST_STACK_NAME'),
+    );
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+    writeln('<info>Restarting Container' . getenv('SITEHOST_STACK_NAME') . ' on ' . getenv('SITEHOST_SERVER_NAME') . '</info>');
+
+    $response = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    writeln('<info> Container finished with response: ' . $status . '</info>');
+
+    curl_close($ch);
+});
+
 
 
 
@@ -145,7 +173,8 @@ task('silverstripe:buildflush', function () {
 task('confirm', function () {
     if (!askConfirmation('Are you sure you want to deploy to production?')) {
         writeln('Ok, quitting.');
-        die;
+        throw new GracefulShutdownException('User aborted the deployment.');
+
     }
 })->select('stage=prod');
 
