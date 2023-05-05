@@ -90,8 +90,8 @@ task('sitehost:listreleases', function () {
     }
 });
 
-task('sitehost:restartcontainer', function () {
-    if (!has('SITEHOST_API_KEY') || !has('SITEHOST_CLIENT_ID') || !has('SITEHOST_SERVER_NAME') || !has('SITEHOST_STACK_NAME')) {
+task('sitehost:restart', function () {
+    if (!getenv('SITEHOST_API_KEY') || !getenv('SITEHOST_CLIENT_ID') || !getenv('SITEHOST_SERVER_NAME') || !getenv('SITEHOST_STACK_NAME')) {
         writeln('<error>SKIPPING - SITEHOST_API_KEY, SITEHOST_CLIENT_ID, SITEHOST_SERVER_NAME and SITEHOST_STACK_NAME must be set in the .env to restart container</error>');
         return;
     }
