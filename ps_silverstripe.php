@@ -91,7 +91,8 @@ task('sitehost:listreleases', function () {
 });
 
 
-task('sitehost:restart', function () {
+
+task('sitehost:restartd', function () {
     if (testLocally('[ -f /var/www/sitehost-api-key.txt ]')) {
         $config = file_get_contents('/var/www/sitehost-api-key.txt');
         set('sitehost_api_key', trim($config));
@@ -122,22 +123,24 @@ task('sitehost:restart', function () {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_POST, 1);
     $body = array(
-        'apikey' => '{{sitehost_api_key}}',
-        'client_id' => '{{sitehost_client_id}}',
-        'server' => '{{sitehost_server_name}}',
-        'name' => '{{sitehost_stack_name}}',
+        'apikey' => get('sitehost_api_key'),
+        'client_id' => get('sitehost_client_id'),
+        'server' => get('sitehost_server_name'),
+        'name' => get('sitehost_stack_name'),
     );
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-    writeln('<info>Restarting Container {{sitehost_stack_name}} on {{sitehost_server_name}}</info>');
+    writeln('<info>Trigger a containter restart {{sitehost_stack_name}} on {{sitehost_server_name}}</info>');
 
     $response = curl_exec($ch);
     $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    writeln('<info> Trigger a containter restart - response from Sitehost: ' . $status . '</info>');
+
+    writeln('<info>Response from Sitehost: ' . $response . '</info>');
 
     curl_close($ch);
 
     //Todo loop over and wait for success response
 });
+
 
 
 
