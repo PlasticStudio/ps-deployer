@@ -90,9 +90,30 @@ task('sitehost:listreleases', function () {
     }
 });
 
+
 task('sitehost:restart', function () {
-    if (!getenv('SITEHOST_API_KEY') || !getenv('SITEHOST_CLIENT_ID') || !getenv('SITEHOST_SERVER_NAME') || !getenv('SITEHOST_STACK_NAME')) {
-        writeln('<error>SKIPPING - SITEHOST_API_KEY, SITEHOST_CLIENT_ID, SITEHOST_SERVER_NAME and SITEHOST_STACK_NAME must be set in the .env to restart container</error>');
+    if (testLocally('[ -f /var/www/sitehost-api-key.txt ]')) {
+        $config = file_get_contents('/var/www/sitehost-api-key.txt');
+        set('sitehost_api_key', trim($config));
+    }
+
+    if (!get('sitehost_api_key')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_api_key not set - You may need to add a the sitehost-api-key.txt to your parent directory or update your docker image</error>');
+        return;
+    }
+
+    if (!get('sitehost_client_id')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_client_id not set</error>');
+        return;
+    }
+
+    if (!get('sitehost_server_name')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_server_name not set</error>');
+        return;
+    }
+
+    if (!get('sitehost_stack_name')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_stack_name not set</error>');
         return;
     }
 
@@ -101,20 +122,23 @@ task('sitehost:restart', function () {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_POST, 1);
     $body = array(
-        'apikey' => getenv('SITEHOST_API_KEY'),
-        'client_id' => getenv('SITEHOST_CLIENT_ID'),
-        'server' => getenv('SITEHOST_SERVER_NAME'),
-        'name' => getenv('SITEHOST_STACK_NAME'),
+        'apikey' => '{{sitehost_api_key}}',
+        'client_id' => '{{sitehost_client_id}}',
+        'server' => '{{sitehost_server_name}}',
+        'name' => '{{sitehost_stack_name}}',
     );
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-    writeln('<info>Restarting Container' . getenv('SITEHOST_STACK_NAME') . ' on ' . getenv('SITEHOST_SERVER_NAME') . '</info>');
+    writeln('<info>Restarting Container {{sitehost_stack_name}} on {{sitehost_server_name}}</info>');
 
     $response = curl_exec($ch);
     $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    writeln('<info> Container finished with response: ' . $status . '</info>');
+    writeln('<info> Trigger a containter restart - response from Sitehost: ' . $status . '</info>');
 
     curl_close($ch);
+
+    //Todo loop over and wait for success response
 });
+
 
 
 
@@ -257,8 +281,8 @@ task('deploy', [
     'deploy:vendors',
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
-    'deploy:publish'
-    // TODO: restart sitehost after deployment
+    'deploy:publish',
+    'sitehost:restart'
 ]);
 
 
