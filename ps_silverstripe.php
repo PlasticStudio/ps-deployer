@@ -92,7 +92,7 @@ task('sitehost:listreleases', function () {
 
 
 
-task('sitehost:restartd', function () {
+task('sitehost:restart', function () {
     if (testLocally('[ -f /var/www/sitehost-api-key.txt ]')) {
         $config = file_get_contents('/var/www/sitehost-api-key.txt');
         set('sitehost_api_key', trim($config));
