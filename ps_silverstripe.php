@@ -2,10 +2,12 @@
 
 namespace Deployer;
 
+use Deployer\Exception\GracefulShutdownException;
+
 require 'recipe/common.php';
 
+// set('dotenv', '{{current_path}}/.env');
 set('keep_releases', 5);
-
 set('writable_mode', 'chmod');
 set('remote_db_backup_path', '/container/backups/latest/databases/');
 set('deploy_path', '/container/application');
@@ -90,6 +92,59 @@ task('sitehost:listreleases', function () {
 
 
 
+task('sitehost:restart', function () {
+    if (testLocally('[ -f /var/www/sitehost-api-key.txt ]')) {
+        $config = file_get_contents('/var/www/sitehost-api-key.txt');
+        set('sitehost_api_key', trim($config));
+    }
+
+    if (!get('sitehost_api_key')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_api_key not set - You may need to add a the sitehost-api-key.txt to your parent directory or update your docker image</error>');
+        return;
+    }
+
+    if (!get('sitehost_client_id')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_client_id not set</error>');
+        return;
+    }
+
+    if (!get('sitehost_server_name')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_server_name not set</error>');
+        return;
+    }
+
+    if (!get('sitehost_stack_name')) {
+        writeln('<error>SKIPPING SITEHOST RESTART - sitehost_stack_name not set</error>');
+        return;
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://api.sitehost.nz/1.2/cloud/stack/restart.json");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    $body = array(
+        'apikey' => get('sitehost_api_key'),
+        'client_id' => get('sitehost_client_id'),
+        'server' => get('sitehost_server_name'),
+        'name' => get('sitehost_stack_name'),
+    );
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+    writeln('<info>Trigger a containter restart {{sitehost_stack_name}} on {{sitehost_server_name}}</info>');
+
+    $response = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    writeln('<info>Response from Sitehost: ' . $response . '</info>');
+
+    curl_close($ch);
+
+    //Todo loop over and wait for success response
+});
+
+
+
+
+
 
 /**
  * Silverstripe configuration
@@ -145,7 +200,8 @@ task('silverstripe:buildflush', function () {
 task('confirm', function () {
     if (!askConfirmation('Are you sure you want to deploy to production?')) {
         writeln('Ok, quitting.');
-        die;
+        throw new GracefulShutdownException('User aborted the deployment.');
+
     }
 })->select('stage=prod');
 
@@ -228,8 +284,8 @@ task('deploy', [
     'deploy:vendors',
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
-    'deploy:publish'
-    // TODO: restart sitehost after deployment
+    'deploy:publish',
+    'sitehost:restart'
 ]);
 
 
