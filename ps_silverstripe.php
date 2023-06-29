@@ -13,6 +13,55 @@ set('remote_db_backup_path', '/container/backups/latest/databases/');
 set('deploy_path', '/container/application');
 set('current_path', '/container/application/public');
 set('identity_file', '~/.ssh/id_rsa');
+set('upgrade_path', '/container/application/upgrade');
+set('shared_path', '/container/application/shared');
+
+/**
+ * Sitehost - this is the upgrade script from mysql 5.7 to 8
+ * This will immediately make the changes to the environment
+ */
+task('sitehost:upgrade-mysql', function () {
+
+    if (!askConfirmation('Are you sure you want to upgrade - this will immediately make the changes to the environment?')) {
+        writeln('Ok, quitting.');
+        throw new GracefulShutdownException('User aborted the deployment.');
+    }
+
+    //1) Export current 
+    writeln('mkdir to save contents - {{upgrade_path}}');
+    run(" mkdir -p {{upgrade_path}}");    
+    writeln('Export using .env details');
+    run("cd {{shared_path}} && export $(grep -v '^#' .env | xargs) && mysqldump -u \$SS_DATABASE_USERNAME -p\$SS_DATABASE_PASSWORD -h \$SS_DATABASE_SERVER --column-statistics=0 --no-tablespaces \$SS_DATABASE_NAME > {{upgrade_path}}/mysql57-backup.sql");
+    writeln('Finished exporting db');
+
+    //2) Set up new db fields
+    $env_SS_DATABASE_SERVER = ask('SS_DATABASE_SERVER', 'mysql8');
+    $env_SS_DATABASE_NAME = ask('SS_DATABASE_NAME');
+    $env_SS_DATABASE_USERNAME = ask('SS_DATABASE_USERNAME');
+    $env_SS_DATABASE_PASSWORD = ask('SS_DATABASE_PASSWORD');
+
+    //3) Import into new db
+    writeln('Import db into new '.$env_SS_DATABASE_SERVER.' - '.$env_SS_DATABASE_NAME);
+    run('mysql -u '.$env_SS_DATABASE_USERNAME.' -p'.$env_SS_DATABASE_PASSWORD.' -h '.$env_SS_DATABASE_SERVER.' '.$env_SS_DATABASE_NAME.' < {{upgrade_path}}/mysql57-backup.sql');
+
+    //4) make backup of .env and update .env file
+    writeln('Backup current .env to {{upgrade_path}}/.env.backup');
+    run('cp {{shared_path}}/.env {{upgrade_path}}/.env.backup');
+    writeln('Overwrite .env with new db details');
+    run('sed -i "s/SS_DATABASE_SERVER=\".*\"/SS_DATABASE_SERVER=\"'.$env_SS_DATABASE_SERVER.'\"/g" {{shared_path}}/.env');
+    run('sed -i "s/SS_DATABASE_NAME=\".*\"/SS_DATABASE_NAME=\"'.$env_SS_DATABASE_NAME.'\"/g" {{shared_path}}/.env');
+    run('sed -i "s/SS_DATABASE_USERNAME=\".*\"/SS_DATABASE_USERNAME=\"'.$env_SS_DATABASE_USERNAME.'\"/g" {{shared_path}}/.env');
+    run('sed -i "s/SS_DATABASE_PASSWORD=\".*\"/SS_DATABASE_PASSWORD=\"'.$env_SS_DATABASE_PASSWORD.'\"/g" {{shared_path}}/.env');    
+    writeln('Finshed - go test website - if there are issues, rollback using dep sitehost:upgrade-mysql:rollback to swap .env files back');
+});
+
+/**
+ * Sitehost - Roll back to old .env
+ */
+task('sitehost:upgrade-mysql:rollback', function () {
+    run('cp {{upgrade_path}}/.env.backup {{shared_path}}/.env');
+});
+
 
 task('sitehost:prepare', [
     'sitehost:symlink',
