@@ -31,7 +31,7 @@ task('sitehost:upgrade-mysql', function () {
     writeln('mkdir to save contents - {{upgrade_path}}');
     run(" mkdir -p {{upgrade_path}}");    
     writeln('Export using .env details');
-    run("cd {{shared_path}} && export $(grep -v '^#' .env | xargs) && mysqldump -u \$SS_DATABASE_USERNAME -p\$SS_DATABASE_PASSWORD -h \$SS_DATABASE_SERVER --column-statistics=0 --no-tablespaces \$SS_DATABASE_NAME > {{upgrade_path}}/mysql57-backup.sql");
+    run("cd {{shared_path}} && tr -d '\r' < .env > .env.lf && mv .env.lf .env && export $(grep -v '^#' .env | xargs) && mysqldump -u \$SS_DATABASE_USERNAME -p\$SS_DATABASE_PASSWORD -h \$SS_DATABASE_SERVER --column-statistics=0 --no-tablespaces \$SS_DATABASE_NAME > {{upgrade_path}}/mysql57-backup.sql");
     writeln('Finished exporting db');
 
     //2) Set up new db fields
