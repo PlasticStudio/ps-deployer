@@ -42,7 +42,7 @@ task('sitehost:upgrade-mysql', function () {
 
     //3) Import into new db
     writeln('Import db into new '.$env_SS_DATABASE_SERVER.' - '.$env_SS_DATABASE_NAME);
-    run('mysql -u '.$env_SS_DATABASE_USERNAME.' -p'.$env_SS_DATABASE_PASSWORD.' -h '.$env_SS_DATABASE_SERVER.' '.$env_SS_DATABASE_NAME.' < {{upgrade_path}}/mysql57-backup.sql');
+    run("mysql -u ".$env_SS_DATABASE_USERNAME." -p'".$env_SS_DATABASE_PASSWORD."' -h ".$env_SS_DATABASE_SERVER." ".$env_SS_DATABASE_NAME." < {{upgrade_path}}/mysql57-backup.sql");
 
     //4) make backup of .env and update .env file
     writeln('Backup current .env to {{upgrade_path}}/.env.backup');
