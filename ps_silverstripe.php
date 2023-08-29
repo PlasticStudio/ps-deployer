@@ -9,7 +9,7 @@ require 'recipe/common.php';
 // set('dotenv', '{{current_path}}/.env');
 set('keep_releases', 5);
 set('writable_mode', 'chmod');
-set('remote_db_backup_path', '/container/backups/latest/databases/');
+set('remote_db_backup_path', '/container/backups/containers/latest/databases/');
 set('deploy_path', '/container/application');
 set('current_path', '/container/application/public');
 set('identity_file', '~/.ssh/id_rsa');
