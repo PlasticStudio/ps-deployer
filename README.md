@@ -98,7 +98,7 @@ require 'vendor/plasticstudio/ps-deployer/ps_silverstripe.php';
 //Legacy deployer v6 path to use
 //set('current_path', '/container/application/current');
 set('repository', 'git@github.com:PlasticStudio/skeletor.git');
-set('remote_assets_backup_path', '/container/backups/latest/application/shared/public/assets'); //no trailing slash is important
+set('remote_assets_backup_path', 'container/backups/containers/latest/application/shared/public/assets'); //no trailing slash is important
 set('remote_assets_path', '/container/application/shared/public/assets/');
 set('local_assets_path', '/var/www/html/public/assets/');
 
