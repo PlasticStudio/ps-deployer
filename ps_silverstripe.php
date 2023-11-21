@@ -344,6 +344,12 @@ task('savefromremote', [
     'savefromremote:assets'
 ]);
 
+task('savefromremote:latest', [
+    'sitehost:backup',
+    'savefromremote:db',
+    'savefromremote:assets'
+]);
+
 /**
  * Save DB from server.
  * Grabs the most recent backup i.e. previous nights DB

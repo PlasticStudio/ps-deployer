@@ -15,6 +15,8 @@
 
 `dep sitehost:backup`
 
+`dep savefromremote:latest`
+
 `dep savefromremote`
 
 `dep savefromremote:db`
@@ -168,6 +170,9 @@ dep deploy stage=prod --tag=1.0.1
 ### Database and assets
 
 Make sure your `deployer.php` paths are set up correctly
+
+Make a new backup, then save both db and assets from remote
+`dep savefromremote:latest`
 
 Save both db and assets from remote
 `dep savefromremote`
