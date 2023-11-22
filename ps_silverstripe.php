@@ -423,8 +423,8 @@ task('loadtoremote:assets:failed', function () {
 // Tasks
 desc('Deploy your project');
 task('deploy', [
-    'sitehost:deploymentbackup',
     'confirm',
+    'sitehost:deploymentbackup',
     'deploy:prepare',
     'deploy:vendors',
     // TODO: check if required 'deploy:clear_paths',
