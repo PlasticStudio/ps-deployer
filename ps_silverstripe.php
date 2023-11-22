@@ -55,6 +55,28 @@ task('sitehost:upgrade-mysql', function () {
     writeln('Finshed - go test website - if there are issues, rollback using dep sitehost:upgrade-mysql:rollback to swap .env files back');
 });
 
+
+
+/**
+ * Sitehost - Open SSH shell to remote server
+ * https://stackoverflow.com/questions/77532896/starting-remote-ssh-session-from-deployer-inside-docker
+ */
+task('sitehost:remoteshell', function () {
+    $host = currentHost();
+
+    $hostname = $host->getHostname();
+    $remoteUser = $host->get('remote_user');
+
+    if (!$remoteUser) {
+        throw new \RuntimeException("Remote user not set for host.");
+    }
+
+    $sshCommand = "ssh -t -T $remoteUser@$hostname";
+    runLocally($sshCommand, ['tty' => true]);
+});
+
+
+
 /**
  * Sitehost - Roll back to old .env
  */
@@ -242,6 +264,9 @@ task('silverstripe:build', function () {
 task('silverstripe:buildflush', function () {
     run('{{bin/php}} {{release_path}}/{{silverstripe_cli_script}} /dev/build flush=all');
 })->desc('Run /dev/build?flush=all');
+
+
+
 
 /**
  * If deploy to production, then ask to be sure
