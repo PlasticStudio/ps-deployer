@@ -71,7 +71,9 @@ task('sitehost:remoteshell', function () {
         throw new \RuntimeException("Remote user not set for host.");
     }
 
-    $sshCommand = "ssh -t -T $remoteUser@$hostname";
+    // $sshCommand = "ssh -T $remoteUser@$hostname";
+    $sshCommand = "script -q -c \"ssh $remoteUser@$hostname\" /dev/null";
+
     runLocally($sshCommand, ['tty' => true]);
 });
 
