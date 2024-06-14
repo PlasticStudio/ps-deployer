@@ -354,6 +354,16 @@ task('savefromremote:latest', [
     'savefromremote:assets'
 ]);
 
+task('savefromremote:latest:assets', [
+    'sitehost:backup',
+    'savefromremote:assets'
+]);
+
+task('savefromremote:latest:db', [
+    'sitehost:backup',
+    'savefromremote:db',
+]);
+
 /**
  * Save DB from server.
  * Grabs the most recent backup i.e. previous nights DB
@@ -363,6 +373,10 @@ task('savefromremote:db', function () {
     writeln('<comment>Running rsync command "rsync -avhzrP {{remote_user}}@{{alias}}:{{remote_db_backup_path}} ./from-remote/"</comment>');
     //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
     runLocally('rsync -aqzrP {{remote_user}}@{{alias}}:{{remote_db_backup_path}} ./from-remote/', ['timeout' => 1800]);
+
+    writeln('<info>Decompressing database...</info>');
+    runLocally('gunzip ./from-remote/*.gz', ['timeout' => 1800]);
+
     writeln('<info>Done!</info>');
 });
 
@@ -406,6 +420,25 @@ task('loadtoremote:assets', function () {
     writeln('<info>============================================================</info>');
     writeln('<info>Done!</info>');
     writeln('<info>============================================================</info>');
+});
+
+task('loadfromremotetolocal', [
+    'loadfromremotetolocal:db',
+    'loadfromremotetolocal:assets'
+]);
+
+/**
+ * Load DB to local
+ */
+task('loadfromremotetolocal:db', function () {
+    writeln('TODO: Load DB from remote to local');
+});
+
+/**
+ * Load assets to local
+ */
+task('loadfromremotetolocal:assets', function () {
+    writeln('TODO: Load DB from remote to local');
 });
 
 /**
