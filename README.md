@@ -23,6 +23,8 @@
 
 `dep savefromremote:assets`
 
+`dep savefromremote:logs`
+
 `dep loadtoremote:assets`
 
 ## Important
