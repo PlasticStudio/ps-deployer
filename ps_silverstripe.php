@@ -382,6 +382,31 @@ task('savefromremote:assets', function () {
 });
 
 /**
+ * Save specific logs from server.
+ * Downloads silverstripe.log, apache2/error.log, and apache2/access.log
+ */
+task('savefromremote:logs', function () {
+    writeln('<info>Retrieving specific logs from SiteHost</info>');
+    
+    // Ensure the local directory exists
+    runLocally('mkdir -p ./from-remote/logs/apache2');
+    
+    // Download silverstripe.log
+    writeln('<comment>Downloading silverstripe.log</comment>');
+    runLocally('rsync -avzP {{remote_user}}@{{alias}}:/container/logs/silverstripe.log ./from-remote/logs/', ['timeout' => 600]);
+    
+    // Download apache2/error.log
+    writeln('<comment>Downloading apache2/error.log</comment>');
+    runLocally('rsync -avzP {{remote_user}}@{{alias}}:/container/logs/apache2/error.log ./from-remote/logs/apache2/', ['timeout' => 600]);
+    
+    // Download apache2/access.log
+    writeln('<comment>Downloading apache2/access.log</comment>');
+    runLocally('rsync -avzP {{remote_user}}@{{alias}}:/container/logs/apache2/access.log ./from-remote/logs/apache2/', ['timeout' => 600]);
+    
+    writeln('<info>Log retrieval completed!</info>');
+});
+
+/**
  * Load local assets to server
  * Makes a temporary copy of current live assets, rolls back to this if there is a transfer issue.
  */
