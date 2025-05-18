@@ -112,7 +112,10 @@ set('local_assets_path', '/var/www/html/public/assets/');
 host('uat.domain.co.nz')
     ->set('labels', ['stage' => 'uat'])
     ->set('http_user', 'uatuser')
-    ->set('remote_user', 'uatuser');
+    ->set('remote_user', 'uatuser')
+    ->set('sitehost_server_name', 'ch-xxx')
+    ->set('sitehost_stack_name', 'xxxxxxxxx')
+    ->set('sitehost_restart_mode', 'apache-php'); //Optional
 
 
 //Production
@@ -188,6 +191,12 @@ Saves the most recent backup i.e. previous nights Assets
 Makes a temporary copy of current live assets, rolls back to this if there is a transfer issue.
 `loadtoremote:assets`
 
+
+Whenever you deploy to sitehost, it will update teh symlink, apache needs to be restarted in order for this to take effect.
+All deployments run `sitehost:restart` which will restart the container. 
+A new option which is better is to set the `sitehost_restart_mode` to `apache-php` in your deploy.php file. This will restart the apache and php only and not the whole container.
+This is only available on certain containers. 
+`->set('sitehost_restart_mode', 'apache-php');`
 
 
 ### Docker
