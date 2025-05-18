@@ -15,6 +15,7 @@ set('current_path', '/container/application/public');
 set('identity_file', '~/.ssh/id_rsa');
 set('upgrade_path', '/container/application/upgrade');
 set('shared_path', '/container/application/shared');
+set('sitehost_restart_mode', 'container'); //This can also be set to apache
 
 /**
  * Sitehost - this is the upgrade script from mysql 5.7 to 8
@@ -27,9 +28,9 @@ task('sitehost:upgrade-mysql', function () {
         throw new GracefulShutdownException('User aborted the deployment.');
     }
 
-    //1) Export current 
+    //1) Export current
     writeln('mkdir to save contents - {{upgrade_path}}');
-    run(" mkdir -p {{upgrade_path}}");    
+    run(" mkdir -p {{upgrade_path}}");
     writeln('Export using .env details');
     run("cd {{shared_path}} && export $(grep -v '^#' .env | xargs) && mysqldump -u \$SS_DATABASE_USERNAME -p\$SS_DATABASE_PASSWORD -h \$SS_DATABASE_SERVER --column-statistics=0 --no-tablespaces \$SS_DATABASE_NAME > {{upgrade_path}}/mysql57-backup.sql");
     writeln('Finished exporting db');
@@ -51,7 +52,7 @@ task('sitehost:upgrade-mysql', function () {
     run('sed -i "s/SS_DATABASE_SERVER=\".*\"/SS_DATABASE_SERVER=\"'.$env_SS_DATABASE_SERVER.'\"/g" {{shared_path}}/.env');
     run('sed -i "s/SS_DATABASE_NAME=\".*\"/SS_DATABASE_NAME=\"'.$env_SS_DATABASE_NAME.'\"/g" {{shared_path}}/.env');
     run('sed -i "s/SS_DATABASE_USERNAME=\".*\"/SS_DATABASE_USERNAME=\"'.$env_SS_DATABASE_USERNAME.'\"/g" {{shared_path}}/.env');
-    run('sed -i "s/SS_DATABASE_PASSWORD=\".*\"/SS_DATABASE_PASSWORD=\"'.$env_SS_DATABASE_PASSWORD.'\"/g" {{shared_path}}/.env');    
+    run('sed -i "s/SS_DATABASE_PASSWORD=\".*\"/SS_DATABASE_PASSWORD=\"'.$env_SS_DATABASE_PASSWORD.'\"/g" {{shared_path}}/.env');
     writeln('Finshed - go test website - if there are issues, rollback using dep sitehost:upgrade-mysql:rollback to swap .env files back');
 });
 
@@ -120,9 +121,9 @@ task('sitehost:phpconfig', function () {
         writeln('No default custom php has been configured');
         writeln('Creating "~/container/config/php/conf.d/ps-custom.ini" and adding defaults');
         run('echo "memory_limit=512M" >> ~/container/config/php/conf.d/ps-custom.ini');
-    //TODO: POST_MAX
-    //TODO: EXECUTION TIME
-    //TODO: UPLOAD_MAX
+        //TODO: POST_MAX
+        //TODO: EXECUTION TIME
+        //TODO: UPLOAD_MAX
     } else {
         writeln('php has been configured - skipping');
     }
@@ -142,6 +143,16 @@ task('sitehost:listreleases', function () {
 
 
 task('sitehost:restart', function () {
+
+    //check restart mode
+    if (get('sitehost_restart_mode') == 'apache') {
+        writeln('<info>Restarting apache</info>');
+        run('supervisorctl restart apache2');
+        return;
+    }
+
+    //fallback to normal
+
     if (testLocally('[ -f /var/www/sitehost-api-key.txt ]')) {
         $config = file_get_contents('/var/www/sitehost-api-key.txt');
         set('sitehost_api_key', trim($config));
@@ -257,7 +268,7 @@ task('sitehost:backup', function () {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             $jobResponse = curl_exec($ch);
             $jobStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            
+
             // Decode the response and check the status
             $jobStatus = json_decode($jobResponse, true);
 
@@ -387,22 +398,22 @@ task('savefromremote:assets', function () {
  */
 task('savefromremote:logs', function () {
     writeln('<info>Retrieving specific logs from SiteHost</info>');
-    
+
     // Ensure the local directory exists
     runLocally('mkdir -p ./from-remote/logs/apache2');
-    
+
     // Download silverstripe.log
     writeln('<comment>Downloading silverstripe.log</comment>');
     runLocally('rsync -avzP {{remote_user}}@{{alias}}:/container/logs/silverstripe.log ./from-remote/logs/', ['timeout' => 600]);
-    
+
     // Download apache2/error.log
     writeln('<comment>Downloading apache2/error.log</comment>');
     runLocally('rsync -avzP {{remote_user}}@{{alias}}:/container/logs/apache2/error.log ./from-remote/logs/apache2/', ['timeout' => 600]);
-    
+
     // Download apache2/access.log
     writeln('<comment>Downloading apache2/access.log</comment>');
     runLocally('rsync -avzP {{remote_user}}@{{alias}}:/container/logs/apache2/access.log ./from-remote/logs/apache2/', ['timeout' => 600]);
-    
+
     writeln('<info>Log retrieval completed!</info>');
 });
 
