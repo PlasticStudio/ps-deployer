@@ -145,9 +145,9 @@ task('sitehost:listreleases', function () {
 task('sitehost:restart', function () {
 
     //check restart mode
-    if (get('sitehost_restart_mode') == 'apache') {
-        writeln('<info>Restarting apache</info>');
-        run('supervisorctl restart apache2');
+    if (get('sitehost_restart_mode') == 'apache-php') {
+        writeln('<info>Restarting apache & php</info>');
+        run('supervisorctl restart apache2 php');
         return;
     }
 
