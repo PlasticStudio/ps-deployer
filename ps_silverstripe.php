@@ -342,8 +342,8 @@ set('silverstripe_cli_base', function () {
     if (test('[ -f ' . $sake . ' ]')) {
         return '{{bin/php}} ' . $sake;
     }
-
-    error('No valid dev/build CLI script found.');
+    
+    throw new \RuntimeException('No valid dev/build CLI script found');
 });
 
 /**
