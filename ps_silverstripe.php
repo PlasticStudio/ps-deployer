@@ -319,28 +319,53 @@ set('writable_dirs', [
 ]);
 
 /**
- *  Silverstripe cli script
+ * Resolve SilverStripe CLI command (CLI first)
  */
-set('silverstripe_cli_script', function () {
+set('silverstripe_cli_base', function () {
+
+    // Test legacy cli-script locations first to preserve current behaviour
     $paths = [
         'framework/cli-script.php',
         'vendor/silverstripe/framework/cli-script.php'
     ];
+
     foreach ($paths as $path) {
-        if (test('[ -f {{release_path}}/' . $path . ' ]')) {
-            return $path;
+        $full = '{{release_path}}/' . $path;
+
+        if (test('[ -f ' . $full . ' ]')) {
+            return '{{bin/php}} ' . $full;
         }
     }
+
+    //Silverstripe 6 must use this
+    $sake = '{{release_path}}/vendor/bin/sake';
+    if (test('[ -f ' . $sake . ' ]')) {
+        return '{{bin/php}} ' . $sake;
+    }
+    
+    throw new \RuntimeException('No valid dev/build CLI script found');
 });
 
 /**
  * Helper tasks
  */
 task('silverstripe:build', function () {
-    run('{{bin/php}} {{release_path}}/{{silverstripe_cli_script}} /dev/build');
+    $cli = get('silverstripe_cli_base');
+
+    if (str_contains($cli, 'sake')) {
+        run($cli . ' db:build');
+    } else {
+        run($cli . ' /dev/build');
+    }
 })->desc('Run /dev/build');
 task('silverstripe:buildflush', function () {
-    run('{{bin/php}} {{release_path}}/{{silverstripe_cli_script}} /dev/build flush=all');
+   $cli = get('silverstripe_cli_base');
+
+    if (str_contains($cli, 'sake')) {
+        run($cli . ' db:build --flush');
+    } else {
+        run($cli . ' /dev/build flush=all');
+    }
 })->desc('Run /dev/build?flush=all');
 
 /**
