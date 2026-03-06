@@ -17,6 +17,11 @@ set('upgrade_path', '/container/application/upgrade');
 set('shared_path', '/container/application/shared');
 set('sitehost_restart_mode', 'container'); //This can also be set to apache
 
+// PHP server config defaults - override per host in deploy.php
+set('php_memory_limit', '512M');
+set('php_post_max_size', '64M');
+set('php_max_execution_time', '60');
+
 /**
  * Sitehost - this is the upgrade script from mysql 5.7 to 8
  * This will immediately make the changes to the environment
@@ -67,7 +72,7 @@ task('sitehost:upgrade-mysql:rollback', function () {
 task('sitehost:prepare', [
     'sitehost:symlink',
     'sitehost:ssh',
-    'sitehost:phpconfig',
+    'sitehost:prepare:serverconfig',
     'sitehost:listreleases'
 ]);
 
@@ -127,6 +132,20 @@ task('sitehost:phpconfig', function () {
     } else {
         writeln('php has been configured - skipping');
     }
+});
+
+/**
+ * Sitehost - Write PHP server config settings to ps-custom.ini.
+ * Values can be overridden per host in deploy.php:
+ *   ->set('php_memory_limit', '256M')
+ *   ->set('php_post_max_size', '32M')
+ *   ->set('php_max_execution_time', '30')
+ */
+task('sitehost:prepare:serverconfig', function () {
+    writeln('Writing PHP server config to "~/container/config/php/conf.d/ps-custom.ini"');
+    run('echo "memory_limit={{php_memory_limit}}" > ~/container/config/php/conf.d/ps-custom.ini');
+    run('echo "post_max_size={{php_post_max_size}}" >> ~/container/config/php/conf.d/ps-custom.ini');
+    run('echo "max_execution_time={{php_max_execution_time}}" >> ~/container/config/php/conf.d/ps-custom.ini');
 });
 
 /**
@@ -491,6 +510,7 @@ task('deploy', [
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
     'deploy:publish',
+    'sitehost:prepare:serverconfig',
     'sitehost:restart'
 ]);
 

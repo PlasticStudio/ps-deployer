@@ -11,6 +11,8 @@
 
 `dep sitehost:prepare`
 
+`dep sitehost:prepare:serverconfig`
+
 `dep sitehost:prepare:deploy stage=uat --branch=master`
 
 `dep sitehost:backup`
@@ -115,7 +117,10 @@ host('uat.domain.co.nz')
     ->set('remote_user', 'uatuser')
     ->set('sitehost_server_name', 'ch-xxx')
     ->set('sitehost_stack_name', 'xxxxxxxxx')
-    ->set('sitehost_restart_mode', 'apache-php'); //Optional
+    ->set('sitehost_restart_mode', 'apache-php') //Optional
+    ->set('php_memory_limit', '512M') //Optional - default 512M
+    ->set('php_post_max_size', '64M') //Optional - default 64M
+    ->set('php_max_execution_time', '60'); //Optional - default 60
 
 
 //Production
@@ -139,7 +144,7 @@ This will:
 
 - Delete public directory which is created on first creation of a Sitehost server, so we can use this path as a symlink
 - Generates ssh key which you can copy to deployment keys on github project
-- Create php default config 
+- Create/update php server config (memory_limit, post_max_size, max_execution_time)
 
 
 If you are doing a container upgrade on Sitehost then you will want to run this command immediately after 
@@ -197,6 +202,23 @@ All deployments run `sitehost:restart` which will restart the container.
 A new option which is better is to set the `sitehost_restart_mode` to `apache-php` in your deploy.php file. This will restart the apache and php only and not the whole container.
 This is only available on certain containers. 
 `->set('sitehost_restart_mode', 'apache-php');`
+
+
+### PHP server config
+
+Each deployment runs `sitehost:prepare:serverconfig` which writes PHP settings to `~/container/config/php/conf.d/ps-custom.ini`.
+
+The following settings can be configured globally or per host in your `deploy.php`:
+
+```php
+->set('php_memory_limit', '512M')     // default: 512M
+->set('php_post_max_size', '64M')     // default: 64M
+->set('php_max_execution_time', '60') // default: 60
+```
+
+You can also run this command manually to update PHP config without a full deployment:
+
+`dep sitehost:prepare:serverconfig`
 
 
 ### Docker
