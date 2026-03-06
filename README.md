@@ -11,9 +11,7 @@
 
 `dep sitehost:prepare`
 
-`dep sitehost:prepare:serverconfig`
-
-`dep sitehost:prepare:deploy stage=uat --branch=master`
+`dep sitehost:phpconfig`
 
 `dep sitehost:backup`
 
@@ -206,7 +204,7 @@ This is only available on certain containers.
 
 ### PHP server config
 
-Each deployment runs `sitehost:prepare:serverconfig` which writes PHP settings to `~/container/config/php/conf.d/ps-custom.ini`.
+Each deployment runs `sitehost:phpconfig` which writes PHP settings to `~/container/config/php/conf.d/ps-custom.ini`.
 
 The following settings can be configured globally or per host in your `deploy.php`:
 
@@ -218,7 +216,7 @@ The following settings can be configured globally or per host in your `deploy.ph
 
 You can also run this command manually to update PHP config without a full deployment:
 
-`dep sitehost:prepare:serverconfig`
+`dep sitehost:phpconfig`
 
 
 ### Docker

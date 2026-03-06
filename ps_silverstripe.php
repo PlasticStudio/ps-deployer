@@ -72,7 +72,7 @@ task('sitehost:upgrade-mysql:rollback', function () {
 task('sitehost:prepare', [
     'sitehost:symlink',
     'sitehost:ssh',
-    'sitehost:prepare:serverconfig',
+    'sitehost:phpconfig',
     'sitehost:listreleases'
 ]);
 
@@ -118,30 +118,13 @@ task('sitehost:ssh', function () {
 });
 
 /**
- * Sitehost
- */
-task('sitehost:phpconfig', function () {
-    //Update php config to default
-    if (test('[ ! -f ~/container/config/php/conf.d/ps-custom.ini ]')) {
-        writeln('No default custom php has been configured');
-        writeln('Creating "~/container/config/php/conf.d/ps-custom.ini" and adding defaults');
-        run('echo "memory_limit=512M" >> ~/container/config/php/conf.d/ps-custom.ini');
-        //TODO: POST_MAX
-        //TODO: EXECUTION TIME
-        //TODO: UPLOAD_MAX
-    } else {
-        writeln('php has been configured - skipping');
-    }
-});
-
-/**
  * Sitehost - Write PHP server config settings to ps-custom.ini.
  * Values can be overridden per host in deploy.php:
  *   ->set('php_memory_limit', '256M')
  *   ->set('php_post_max_size', '32M')
  *   ->set('php_max_execution_time', '30')
  */
-task('sitehost:prepare:serverconfig', function () {
+task('sitehost:phpconfig', function () {
     writeln('Writing PHP server config to "~/container/config/php/conf.d/ps-custom.ini"');
     run('echo "memory_limit={{php_memory_limit}}" > ~/container/config/php/conf.d/ps-custom.ini');
     run('echo "post_max_size={{php_post_max_size}}" >> ~/container/config/php/conf.d/ps-custom.ini');
@@ -510,7 +493,7 @@ task('deploy', [
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
     'deploy:publish',
-    'sitehost:prepare:serverconfig',
+    'sitehost:phpconfig',
     'sitehost:restart'
 ]);
 
