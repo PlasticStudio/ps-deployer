@@ -125,10 +125,20 @@ task('sitehost:ssh', function () {
  *   ->set('php_max_execution_time', '30')
  */
 task('sitehost:phpconfig', function () {
-    writeln('Writing PHP server config to "~/container/config/php/conf.d/ps-custom.ini"');
-    run('echo "memory_limit={{php_memory_limit}}" > ~/container/config/php/conf.d/ps-custom.ini');
-    run('echo "post_max_size={{php_post_max_size}}" >> ~/container/config/php/conf.d/ps-custom.ini');
-    run('echo "max_execution_time={{php_max_execution_time}}" >> ~/container/config/php/conf.d/ps-custom.ini');
+    $ini = '~/container/config/php/conf.d/ps-custom.ini';
+    writeln('Updating PHP server config in "' . $ini . '"');
+    run('touch ' . $ini);
+    $settings = [
+        'memory_limit'      => get('php_memory_limit'),
+        'post_max_size'     => get('php_post_max_size'),
+        'max_execution_time' => get('php_max_execution_time'),
+    ];
+    foreach ($settings as $key => $value) {
+        // Replace the existing line if present, otherwise append
+        run('grep -q "^' . $key . '=" ' . $ini
+            . ' && sed -i "s|^' . $key . '=.*|' . $key . '=' . $value . '|" ' . $ini
+            . ' || echo "' . $key . '=' . $value . '" >> ' . $ini);
+    }
 });
 
 /**

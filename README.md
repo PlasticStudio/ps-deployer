@@ -204,7 +204,7 @@ This is only available on certain containers.
 
 ### PHP server config
 
-Each deployment runs `sitehost:phpconfig` which writes PHP settings to `~/container/config/php/conf.d/ps-custom.ini`.
+Each deployment runs `sitehost:phpconfig` which updates the managed PHP settings in `~/container/config/php/conf.d/ps-custom.ini`, patching only the relevant lines so any other config in the file is preserved.
 
 The following settings can be configured globally or per host in your `deploy.php`:
 
