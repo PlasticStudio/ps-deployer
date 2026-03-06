@@ -127,17 +127,24 @@ task('sitehost:ssh', function () {
 task('sitehost:phpconfig', function () {
     $ini = '~/container/config/php/conf.d/ps-custom.ini';
     writeln('Updating PHP server config in "' . $ini . '"');
-    run('touch ' . $ini);
+    // Ensure the directory and file exist before patching
+    run('mkdir -p ~/container/config/php/conf.d && touch ' . $ini);
     $settings = [
-        'memory_limit'      => get('php_memory_limit'),
-        'post_max_size'     => get('php_post_max_size'),
+        'memory_limit'       => get('php_memory_limit'),
+        'post_max_size'      => get('php_post_max_size'),
         'max_execution_time' => get('php_max_execution_time'),
     ];
     foreach ($settings as $key => $value) {
+        // Escape value for sed replacement (|, \, and & are special in the replacement string).
+        // strtr() is used instead of str_replace() to avoid double-escaping when the value
+        // contains multiple metacharacters (str_replace processes needles sequentially).
+        $sedValue = strtr($value, ['\\' => '\\\\', '|' => '\\|', '&' => '\\&']);
+        // Escape value for shell echo (handles spaces, quotes, etc.)
+        $shellValue = escapeshellarg($value);
         // Replace the existing line if present, otherwise append
-        run('grep -q "^' . $key . '=" ' . $ini
-            . ' && sed -i "s|^' . $key . '=.*|' . $key . '=' . $value . '|" ' . $ini
-            . ' || echo "' . $key . '=' . $value . '" >> ' . $ini);
+        run("grep -q '^{$key}=' {$ini}"
+            . " && sed -i 's|^{$key}=.*|{$key}={$sedValue}|' {$ini}"
+            . " || echo {$key}={$shellValue} >> {$ini}");
     }
 });
 
