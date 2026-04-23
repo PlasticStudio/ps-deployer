@@ -17,6 +17,33 @@ set('shared_dirs', []);
 set('shared_files', []);
 set('writable_dirs', []);
 
+// ==================================================================
+// Initial Preparation
+
+/**
+ * Sitehost
+ */
+task('sitehost:ssh', function () {
+    //Test if ssh keys for deployments have been generated.
+    if (test('[ ! -f ~/.ssh/id_rsa ]')) {
+        writeln('Generating new ssh key');
+        run('ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ""');
+        run('cat ~/.ssh/id_rsa.pub', ['real_time_output' => true]);
+        writeln('Copy this key to the projects deploy keys on github');
+    } else {
+        writeln('ssh key found - skipping');
+        run('cat ~/.ssh/id_rsa.pub', ['real_time_output' => true]);
+        writeln('Copy this key to the projects deploy keys on github');
+    }
+});
+
+task('sitehost:prepare', [
+    'sitehost:ssh'
+]);
+
+// ==================================================================
+// Ongoing Development
+
 task('wordpress:theme:symlink', function () {
     $wpThemeDir = '{{shared_path}}/{{sub_directory}}/{{theme_folder}}';
     $deployerCurrent = '{{deploy_path}}/current';
