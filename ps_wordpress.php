@@ -48,6 +48,8 @@ task('wordpress:theme:symlink', function () {
     $wpThemeDir = '{{shared_path}}/{{sub_directory}}/{{theme_folder}}';
     $deployerCurrent = '{{deploy_path}}/current';
 
+    run('mkdir -p ' . dirname($wpThemeDir));
+
     if (test('[ ! -L ' . $wpThemeDir . ' ] && [ -d ' . $wpThemeDir . ' ]')) {
         writeln('<comment>Theme directory exists as real dir — moving aside to {{theme_folder}}-backup</comment>');
         run('mv ' . $wpThemeDir . ' ' . $wpThemeDir . '-backup');
