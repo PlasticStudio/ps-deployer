@@ -1,1 +1,5 @@
-<!-- To be populated with shared configuration / functions -->
+<?php
+
+namespace Deployer;
+
+set('sitehost_client_id', '969806');
