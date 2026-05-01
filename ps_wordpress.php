@@ -192,7 +192,8 @@ task('confirm', function () {
  * Aborts deployment if the file is not present locally.
  */
 task('deploy:config', function () {
-    $localFile = __DIR__ . '/wp-config-env.php';
+    // Find project root (3 levels up from this file)
+    $localFile = dirname(__DIR__, 3) . '/wp-config-env.php';
     if (!file_exists($localFile)) {
         throw new GracefulShutdownException('wp-config-env.php not found locally. Deployment aborted.');
     }
