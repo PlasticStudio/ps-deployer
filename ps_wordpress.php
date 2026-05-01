@@ -197,7 +197,13 @@ task('deploy:config', function () {
     if (!file_exists($localFile)) {
         throw new GracefulShutdownException('wp-config-env.php not found locally. Deployment aborted.');
     }
-    upload($localFile, '/container/application/public/wp-config-env.php');
+
+    // Use scp to upload the file from local to remote, like loadtoremote:assets
+    $remoteUser = get('remote_user');
+    $alias = get('alias');
+    $remotePath = '/container/application/public/wp-config-env.php';
+    writeln("<comment>Running scp command: scp $localFile $remoteUser@$alias:$remotePath</comment>");
+    runLocally("scp $localFile $remoteUser@$alias:$remotePath", ['timeout' => 60]);
     writeln('<info>wp-config-env.php uploaded to /container/application/public/</info>');
 });
 
