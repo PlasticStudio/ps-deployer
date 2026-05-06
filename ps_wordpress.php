@@ -8,7 +8,7 @@ require __DIR__ . '/ps_base.php';
 
 set('keep_releases', 5);
 set('writable_mode', 'chmod');
-set('remote_db_backup_path', '/container/backups/containers/latest/databases/');
+set('remote_db_backup_path', '/container/backups/containers/latest/databases');
 set('remote_assets_backup_path', '/container/backups/containers/latest/application/shared/public/assets');
 set('deploy_path', '/container/application/theme');
 set('identity_file', '~/.ssh/id_rsa');
@@ -187,6 +187,17 @@ task('savefromremote:assets', function () {
     writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/</comment>');
     //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
     runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/', ['timeout' => 1800]);
+
+    writeln('<info>==============</info>');
+    writeln('<info>Done!</info>');
+    writeln('<info>==============</info>');
+});
+
+task('savefromremote:plugins', function () {
+    writeln('<info>Save plugins from SiteHost</info>');
+    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/</comment>');
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/', ['timeout' => 1800]);
 
     writeln('<info>==============</info>');
     writeln('<info>Done!</info>');
