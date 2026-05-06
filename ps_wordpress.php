@@ -8,6 +8,8 @@ require __DIR__ . '/ps_base.php';
 
 set('keep_releases', 5);
 set('writable_mode', 'chmod');
+set('remote_db_backup_path', '/container/backups/containers/latest/databases/');
+set('remote_assets_backup_path', '/container/backups/containers/latest/application/shared/public/assets');
 set('deploy_path', '/container/application/theme');
 set('identity_file', '~/.ssh/id_rsa');
 set('shared_path', '/container/application/public');
