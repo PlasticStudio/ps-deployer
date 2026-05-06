@@ -86,6 +86,95 @@ task('sitehost:prepare', [
 // ==================================================================
 // Ongoing Development
 
+task('savefromremote', [
+    'savefromremote:db',
+    'savefromremote:assets'
+]);
+
+task('savefromremote:latest', [
+    'sitehost:backup',
+    'savefromremote:db',
+    'savefromremote:assets'
+]);
+
+task('sitehost:backup', function () {
+    if (testLocally('[ -f /var/www/sitehost-api-key.txt ]')) {
+        $config = file_get_contents('/var/www/sitehost-api-key.txt');
+        set('sitehost_api_key', trim($config));
+    }
+
+    if (!get('sitehost_api_key')) {
+        writeln('<error>SKIPPING SITEHOST BACKUP - sitehost_api_key not set - You may need to add a the sitehost-api-key.txt to your parent directory or update your docker image</error>');
+        return;
+    }
+
+    if (!get('sitehost_client_id')) {
+        writeln('<error>SKIPPING SITEHOST BACKUP - sitehost_client_id not set</error>');
+        return;
+    }
+
+    if (!get('sitehost_server_name')) {
+        writeln('<error>SKIPPING SITEHOST BACKUP - sitehost_server_name not set</error>');
+        return;
+    }
+
+    if (!get('sitehost_stack_name')) {
+        writeln('<error>SKIPPING SITEHOST BACKUP - sitehost_stack_name not set</error>');
+        return;
+    }
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://api.sitehost.nz/1.2/cloud/stack/backup.json");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    $body = array(
+        'apikey' => get('sitehost_api_key'),
+        'client_id' => get('sitehost_client_id'),
+        'server' => get('sitehost_server_name'),
+        'name' => get('sitehost_stack_name'),
+    );
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+    writeln('<info>Trigger a containter backup {{sitehost_stack_name}} on {{sitehost_server_name}}</info>');
+
+    $backupResponse = curl_exec($ch);
+    $backupStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    writeln('<info>Response from Sitehost: ' . $backupResponse . '</info>');
+
+    curl_close($ch);
+
+    $backupResponse = json_decode($backupResponse, true);
+
+    // if response.status is true, start looping the job endpoint to wait for a completed response
+    if ($backupStatusCode == 200 && isset($backupResponse['return']) && isset($backupResponse['return']['job_id'])) {
+
+        writeln('<info>Waiting for backup to complete...</info>');
+
+        $job_url = "https://api.sitehost.nz/1.2/job/get.json?apikey=" . get('sitehost_api_key') . "&job_id=" . $backupResponse['return']['job_id'] . "&type=scheduler"; // scheduler or daemon
+
+        $ch = curl_init();
+
+        // Loop until the job is completed
+        do {
+            sleep(5); //. Check every 5 seconds for completed backup
+
+            curl_setopt($ch, CURLOPT_URL, $job_url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            $jobResponse = curl_exec($ch);
+            $jobStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            // Decode the response and check the status
+            $jobStatus = json_decode($jobResponse, true);
+
+        } while ($jobStatus['return']['state'] != 'Completed');
+
+        curl_close($ch);
+
+        writeln('<info>Backup completed</info>');
+
+    }
+});
+
 task('savefromremote:assets', function () {
     writeln('<info>Save assets from SiteHost</info>');
     writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/</comment>');
@@ -96,6 +185,15 @@ task('savefromremote:assets', function () {
     writeln('<info>Done!</info>');
     writeln('<info>==============</info>');
 });
+
+task('savefromremote:db', function () {
+    writeln('<info>Retrieving db from SiteHost</info>');
+    writeln('<comment>Running rsync command "rsync -avhzrP {{remote_user}}@{{alias}}:{{remote_db_backup_path}} ./from-remote/"</comment>');
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -aqzrP {{remote_user}}@{{alias}}:{{remote_db_backup_path}} ./from-remote/', ['timeout' => 1800]);
+    writeln('<info>Done!</info>');
+});
+
 
 /**
  * Syncs the database and uploads from a remote environment (uat or prod) to the local machine.
