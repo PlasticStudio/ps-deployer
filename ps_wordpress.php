@@ -64,6 +64,7 @@ task('sitehost:ssh', function () {
  */
 task('sitehost:config', function () {
     $wpConfig = '/container/application/public/wp-config.php';
+    $wpConfigEnv = '/container/application/public/wp-config-env.php';
 
     // Stage 1: Comment out WP_DEBUG
     run("sed -i \"s|^define('WP_DEBUG', false);|// define('WP_DEBUG', false);|\" {$wpConfig}");
@@ -72,6 +73,10 @@ task('sitehost:config', function () {
     // Stage 2: Insert require_once above the "stop editing" line (only if not already present)
     run("grep -qF \"require_once(ABSPATH . 'wp-config-env.php');\" {$wpConfig} || sed -i \"/\\/\\* That's all, stop editing! Happy blogging. \\*\\//i require_once(ABSPATH . 'wp-config-env.php');\" {$wpConfig}");
     writeln('<info>require_once wp-config-env.php inserted in ' . $wpConfig . '</info>');
+
+    // Stage 3: Touch wp-config-env.php with <?php at the start (only if not already present)
+    run("[ -f {$wpConfigEnv} ] || echo '<?php' > {$wpConfigEnv}");
+    writeln('<info>wp-config-env.php created at ' . $wpConfigEnv . '</info>');
 });
 
 /**
@@ -290,11 +295,17 @@ task('confirm', function () {
  * Aborts deployment if the file is not present locally.
  */
 task('deploy:config', function () {
-    $localFile = __DIR__ . '/wp-config-env.php';
+    // Find project root (3 levels up from this file)
+    $localFile = dirname(__DIR__, 3) . '/wp-config-env.php';
     if (!file_exists($localFile)) {
         throw new GracefulShutdownException('wp-config-env.php not found locally. Deployment aborted.');
     }
-    upload($localFile, '/container/application/public/wp-config-env.php');
+
+    $remoteUser = get('remote_user');
+    $alias = get('alias');
+    $remotePath = '/container/application/public/';
+    writeln("<comment>Running rsync command: rsync -avP $localFile $remoteUser@$alias:$remotePath</comment>");
+    runLocally("rsync -avP $localFile $remoteUser@$alias:$remotePath", ['timeout' => 60]);
     writeln('<info>wp-config-env.php uploaded to /container/application/public/</info>');
 });
 
