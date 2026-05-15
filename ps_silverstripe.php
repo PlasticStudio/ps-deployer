@@ -17,6 +17,11 @@ set('upgrade_path', '/container/application/upgrade');
 set('shared_path', '/container/application/shared');
 set('sitehost_restart_mode', 'container'); //This can also be set to apache
 
+// PHP server config defaults - override per host in deploy.php
+set('php_memory_limit', '512M');
+set('php_post_max_size', '64M');
+set('php_max_execution_time', '60');
+
 /**
  * Sitehost - this is the upgrade script from mysql 5.7 to 8
  * This will immediately make the changes to the environment
@@ -113,19 +118,33 @@ task('sitehost:ssh', function () {
 });
 
 /**
- * Sitehost
+ * Sitehost - Write PHP server config settings to ps-custom.ini.
+ * Values can be overridden per host in deploy.php:
+ *   ->set('php_memory_limit', '256M')
+ *   ->set('php_post_max_size', '32M')
+ *   ->set('php_max_execution_time', '30')
  */
 task('sitehost:phpconfig', function () {
-    //Update php config to default
-    if (test('[ ! -f ~/container/config/php/conf.d/ps-custom.ini ]')) {
-        writeln('No default custom php has been configured');
-        writeln('Creating "~/container/config/php/conf.d/ps-custom.ini" and adding defaults');
-        run('echo "memory_limit=512M" >> ~/container/config/php/conf.d/ps-custom.ini');
-        //TODO: POST_MAX
-        //TODO: EXECUTION TIME
-        //TODO: UPLOAD_MAX
-    } else {
-        writeln('php has been configured - skipping');
+    $ini = '~/container/config/php/conf.d/ps-custom.ini';
+    writeln('Updating PHP server config in "' . $ini . '"');
+    // Ensure the directory and file exist before patching
+    run('mkdir -p ~/container/config/php/conf.d && touch ' . $ini);
+    $settings = [
+        'memory_limit'       => get('php_memory_limit'),
+        'post_max_size'      => get('php_post_max_size'),
+        'max_execution_time' => get('php_max_execution_time'),
+    ];
+    foreach ($settings as $key => $value) {
+        // Escape value for sed replacement (|, \, and & are special in the replacement string).
+        // strtr() is used instead of str_replace() to avoid double-escaping when the value
+        // contains multiple metacharacters (str_replace processes needles sequentially).
+        $sedValue = strtr($value, ['\\' => '\\\\', '|' => '\\|', '&' => '\\&']);
+        // Escape value for shell echo (handles spaces, quotes, etc.)
+        $shellValue = escapeshellarg($value);
+        // Replace the existing line if present, otherwise append
+        run("grep -q '^{$key}=' {$ini}"
+            . " && sed -i 's|^{$key}=.*|{$key}={$sedValue}|' {$ini}"
+            . " || echo {$key}={$shellValue} >> {$ini}");
     }
 });
 
@@ -491,6 +510,7 @@ task('deploy', [
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
     'deploy:publish',
+    'sitehost:phpconfig',
     'sitehost:restart'
 ]);
 
