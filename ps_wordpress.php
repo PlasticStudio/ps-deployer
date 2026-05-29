@@ -323,15 +323,19 @@ task('deploy:config', function () {
 });
 
 /**
- * Checks for a composer.json file in the release. If found, runs composer install.
- * If not found, skips with a notice.
+ * Runs composer install in the theme directory if composer.json is present.
  */
 task('composer:install', function () {
-    if (test('[ -f {{release_path}}/composer.json ]')) {
-        run('cd {{release_path}} && composer install --no-dev --optimize-autoloader');
-        writeln('<info>Composer install complete</info>');
+    $themePath = '{{release_path}}/{{theme_folder}}';
+    $lsOutput = run('ls -lah ' . $themePath . ' || echo "[theme directory missing]"');
+    writeln($lsOutput);
+    $realPath = run('cd ' . $themePath . ' && pwd || echo "[theme directory missing]"');
+    $composerExists = test('[ -f ' . $themePath . '/composer.json ]');
+    if ($composerExists) {
+        run('cd ' . $themePath . ' && composer install --no-dev --optimize-autoloader');
+        writeln('<info>Composer install complete in theme directory</info>');
     } else {
-        writeln('<comment>No composer.json found — skipping composer install</comment>');
+        writeln('<comment>No composer.json found in theme directory — skipping composer install for theme</comment>');
     }
 });
 
@@ -359,9 +363,9 @@ task('deploy', [
     'confirm',
     'deploy:config',
     'deploy:prepare',
-    'composer:install',
     'deploy:publish',
     'wordpress:theme:symlink',
+    'composer:install',
 ]);
 
 after('deploy:failed', 'deploy:unlock');
