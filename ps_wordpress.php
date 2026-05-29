@@ -323,6 +323,19 @@ task('deploy:config', function () {
 });
 
 /**
+ * Checks for a composer.json file in the release. If found, runs composer install.
+ * If not found, skips with a notice.
+ */
+task('composer:install', function () {
+    if (test('[ -f {{release_path}}/composer.json ]')) {
+        run('cd {{release_path}} && composer install --no-dev --optimize-autoloader');
+        writeln('<info>Composer install complete</info>');
+    } else {
+        writeln('<comment>No composer.json found — skipping composer install</comment>');
+    }
+});
+
+/**
  * Creates a symlink from the shared WordPress theme directory to the current
  * Deployer release. Moves aside any existing non-symlinked theme directory.
  */
@@ -346,6 +359,7 @@ task('deploy', [
     'confirm',
     'deploy:config',
     'deploy:prepare',
+    'composer:install',
     'deploy:publish',
     'wordpress:theme:symlink',
 ]);
