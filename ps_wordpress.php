@@ -419,7 +419,7 @@ task('composer:install', function () {
  */
 task('wordpress:theme:symlink', function () {
     $wpThemeDir = '{{shared_path}}/{{sub_directory}}/{{theme_folder}}';
-    $deployerCurrent = '{{deploy_path}}/current';
+    $deployerCurrent = '{{deploy_path}}/current/{{theme_folder}}';
 
     run('mkdir -p ' . dirname($wpThemeDir));
 
