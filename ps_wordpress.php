@@ -20,6 +20,9 @@ set('shared_dirs', []);
 set('shared_files', []);
 set('writable_dirs', []);
 
+set('local_wp_path', '/var/www/html');
+set('local_wp_binary', '/usr/local/bin/wp');
+
 // ==================================================================
 // Initial Preparation
 
@@ -95,13 +98,22 @@ task('sitehost:prepare', [
 
 task('savefromremote', [
     'savefromremote:db',
+    'savefromremote:plugins',
     'savefromremote:assets'
 ]);
 
 task('savefromremote:latest', [
     'sitehost:backup',
     'savefromremote:db',
+    'savefromremote:plugins',
     'savefromremote:assets'
+]);
+
+task('syncfromremote', [
+    'syncfromremote:confirm',
+    'syncfromremote:db',
+    'syncfromremote:plugins',
+    'syncfromremote:assets'
 ]);
 
 task('sitehost:backup', function () {
@@ -148,8 +160,6 @@ task('sitehost:backup', function () {
 
     writeln('<info>Response from Sitehost: ' . $backupResponse . '</info>');
 
-    curl_close($ch);
-
     $backupResponse = json_decode($backupResponse, true);
 
     // if response.status is true, start looping the job endpoint to wait for a completed response
@@ -172,36 +182,17 @@ task('sitehost:backup', function () {
 
             // Decode the response and check the status
             $jobStatus = json_decode($jobResponse, true);
-
         } while ($jobStatus['return']['state'] != 'Completed');
 
-        curl_close($ch);
-
         writeln('<info>Backup completed</info>');
-
     }
 });
 
-task('savefromremote:assets', function () {
-    writeln('<info>Save assets from SiteHost</info>');
-    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/</comment>');
-    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
-    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/', ['timeout' => 1800]);
-
-    writeln('<info>==============</info>');
-    writeln('<info>Done!</info>');
-    writeln('<info>==============</info>');
-});
-
-task('savefromremote:plugins', function () {
-    writeln('<info>Save plugins from SiteHost</info>');
-    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/</comment>');
-    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
-    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/', ['timeout' => 1800]);
-
-    writeln('<info>==============</info>');
-    writeln('<info>Done!</info>');
-    writeln('<info>==============</info>');
+task('syncfromremote:confirm', function () {
+    if (!askConfirmation('This will OVERWRITE your LOCAL database, plugins and uploads. Continue?')) {
+        writeln('Aborting sync.');
+        throw new GracefulShutdownException('User aborted the sync.');
+    }
 });
 
 task('savefromremote:db', function () {
@@ -212,81 +203,173 @@ task('savefromremote:db', function () {
     writeln('<info>Done!</info>');
 });
 
+task('syncfromremote:db', function () {
+    $remoteUser  = get('remote_user');
+    $hostname    = get('hostname');
+    $sharedPath  = get('shared_path');
+    $localUrl    = 'http://' . get('local_url');
+    $localWpPath = get('local_wp_path');
+    $localWp     = get('local_wp_binary');
 
-/**
- * Syncs the database and uploads from a remote environment (uat or prod) to the local machine.
- *
- * Prompts for the source environment, then:
- * - Exports the remote database via wp-cli and imports it locally.
- * - Runs a search-replace to swap the remote site URL for the local URL.
- * - Rsyncs wp-content/uploads from the remote server to the local project.
- * - Flushes rewrite rules locally.
- *
- * Requires `local_url` to be set in the host configuration.
- */
-task('syncfromremote', function () {
+    writeln('<comment>Detecting remote URL...</comment>');
+    $remoteUrl = trim(run("cd {$sharedPath} && ~/bin/wp option get siteurl --allow-root"));
+    writeln("<info>Remote URL: {$remoteUrl}</info>");
+    writeln("<info>Local URL: {$localUrl}</info>");
+    writeln("<info>Local WP Path: {$localWpPath}</info>");
 
-    $stages = array_values(array_unique(array_filter(
-        array_map(fn($host) => $host->get('labels')['stage'] ?? null, Deployer::get()->hosts->toArray())
-    )));
+    writeln('<comment>Exporting remote database and importing locally...</comment>');
+    runLocally(
+        "ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && ~/bin/wp db export - --allow-root' | {$localWp} db import - --path={$localWpPath}",
+        ['timeout' => 1800]
+    );
+    writeln('<info>Database imported</info>');
 
-    $stage = askChoice(
-        'Which environment do you want to sync FROM?',
-        $stages,
-        0
+    writeln('<comment>Running search-replace: ' . $remoteUrl . ' → ' . $localUrl . '...</comment>');
+    runLocally(
+        "{$localWp} search-replace '{$remoteUrl}' '{$localUrl}' --all-tables --precise --skip-columns=guid --path={$localWpPath}",
+        ['timeout' => 1800]
+    );
+    writeln('<info>Search-replace complete</info>');
+
+    writeln('<comment>Flushing cache...</comment>');
+    runLocally("{$localWp} cache flush --path={$localWpPath}");
+
+    writeln('<comment>Flushing rewrite rules...</comment>');
+    runLocally("{$localWp} rewrite flush --hard --path={$localWpPath}");
+
+    // If template parts are missing images/buttons, the wp_theme term may be mismatched.
+    // Run manually: /usr/local/bin/wp post list --post_type=wp_template_part --format=ids --path=/var/www/html | xargs -I {} /usr/local/bin/wp post term set {} wp_theme electra --path=/var/www/html
+
+    writeln('<info>Database sync complete</info>');
+});
+
+task('savefromremote:assets', function () {
+    writeln('<info>Save assets from SiteHost</info>');
+    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./from-remote/uploads/</comment>');
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./from-remote/uploads/', ['timeout' => 1800]);
+    writeln('<info>Done!</info>');
+});
+
+task('syncfromremote:assets', function () {
+    writeln('<info>Save assets from SiteHost</info>');
+    writeln('<comment>Note: These replace your local wp-content/uploads directory</comment>');
+    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/</comment>');
+    // Clear existing uploads before syncing to avoid deleted files lingering in the uploads directory
+    runLocally('rm -rf ./wp-content/uploads/*');
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/', ['timeout' => 1800]);
+    writeln('<info>Done!</info>');
+});
+
+task('savefromremote:plugins', function () {
+    writeln('<info>Save plugins from SiteHost</info>');
+    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./from-remote/plugins/</comment>');
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./from-remote/plugins/', ['timeout' => 1800]);
+    writeln('<info>Done!</info>');
+});
+
+task('syncfromremote:plugins', function () {
+    writeln('<info>Save plugins from SiteHost</info>');
+    writeln('<comment>Note: These replace your local wp-content/plugins directory</comment>');
+    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/</comment>');
+    // Clear existing plugins before syncing to avoid deleted plugins lingering in the plugins directory
+    runLocally('rm -rf ./wp-content/plugins/*');
+    //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
+    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/', ['timeout' => 1800]);
+    writeln('<info>Done!</info>');
+});
+
+task('synctoremote', [
+    'synctoremote:confirm',
+    'synctoremote:doubleconfirm',
+    'sitehost:backup',
+    'synctoremote:plugins',
+    'synctoremote:assets',
+    'synctoremote:db',
+]);
+
+task('synctoremote:confirm', function () {
+    $siteUrl = get('site_url');
+    $input = ask("You are about to OVERWRITE the REMOTE database, plugins and uploads on {$siteUrl}. Type the site URL to confirm: ");
+    
+    if (trim($input) !== $siteUrl) {
+        writeln('<error>Input did not match. Aborting.</error>');
+        throw new GracefulShutdownException('User aborted the sync.');
+    }
+
+    writeln("<info>Confirmed. Taking a backup and syncing to {$siteUrl}...</info>");
+});
+
+task('synctoremote:doubleconfirm', function () {
+    if (!askConfirmation('WARNING: Are you sure you want to sync your local environment to production?')) {
+        writeln('Ok, quitting.');
+        throw new GracefulShutdownException('User aborted the sync.');
+    }
+})->select('stage=prod');
+
+task('synctoremote:plugins', function () {
+    $remoteUser = get('remote_user');
+    $hostname   = get('hostname');
+    $sharedPath = get('shared_path');
+
+    writeln('<info>Syncing plugins to remote...</info>');
+    writeln('<comment>Note: This replaces the remote wp-content/plugins directory</comment>');
+
+    run("rm -rf {$sharedPath}/wp-content/plugins/*");
+    runLocally(
+        "rsync -avhzrP ./wp-content/plugins/ {$remoteUser}@{$hostname}:{$sharedPath}/wp-content/plugins/",
+        ['timeout' => 1800]
     );
 
-    // Apply stage selection
-    on(select("stage={$stage}"), function ($host) {
+    writeln('<info>Done!</info>');
+});
 
-        if (!askConfirmation("This will OVERWRITE your LOCAL database and uploads from {$host->getHostname()}. Continue?")) {
-            writeln('Aborting sync.');
-            return;
-        }
+task('synctoremote:assets', function () {
+    $remoteUser = get('remote_user');
+    $hostname   = get('hostname');
+    $sharedPath = get('shared_path');
 
-        writeln("<info>Syncing from {$host->getHostname()} ({$host->get('labels')['stage']})</info>");
+    writeln('<info>Syncing uploads to remote...</info>');
+    writeln('<comment>Note: This replaces the remote wp-content/uploads directory</comment>');
 
-        writeln('<comment>Detecting remote URL...</comment>');
+    run("rm -rf {$sharedPath}/wp-content/uploads/*");
+    runLocally(
+        "rsync -avhzrP ./wp-content/uploads/ {$remoteUser}@{$hostname}:{$sharedPath}/wp-content/uploads/",
+        ['timeout' => 1800]
+    );
 
-        $remoteUrl = run("cd {{shared_path}} && wp option get siteurl --allow-root");
+    writeln('<info>Done!</info>');
+});
 
-        $localUrl = 'http://' . get('local_url');
+task('synctoremote:db', function () {
+    $remoteUser = get('remote_user');
+    $hostname   = get('hostname');
+    $sharedPath = get('shared_path');
+    $localUrl   = 'http://' . get('local_url');
+    $localWp    = get('local_wp_binary');
+    $localWpPath = get('local_wp_path');
+    $remoteUrl  = 'https://' . get('site_url');
 
-        writeln("<info>Remote URL: {$remoteUrl}</info>");
-        writeln("<info>Local URL: {$localUrl}</info>");
+    writeln("<info>Local URL: {$localUrl}</info>");
+    writeln("<info>Remote URL: {$remoteUrl}</info>");
 
-        writeln('<comment>Syncing database...</comment>');
+    writeln('<comment>Exporting local database and importing to remote...</comment>');
+    runLocally(
+        "{$localWp} db export - --path={$localWpPath} | ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && ~/bin/wp db import - --allow-root'",
+        ['timeout' => 1800]
+    );
 
-        runLocally(
-            "ssh {{remote_user}}@{{hostname}} 'cd {{shared_path}} && wp db export - --allow-root' | wp db import -",
-            ['timeout' => 1800]
-        );
+    writeln('<comment>Running search-replace on remote...</comment>');
+    run(
+        "cd {$sharedPath} && ~/bin/wp search-replace '{$localUrl}' '{$remoteUrl}' --all-tables --precise --skip-columns=guid --allow-root",
+        ['timeout' => 1800]
+    );
 
-        writeln('<info>Database imported locally</info>');
-
-        writeln('<comment>Running search-replace...</comment>');
-
-        runLocally(
-            "wp search-replace '{$remoteUrl}' '{$localUrl}' --all-tables --precise --skip-columns=guid",
-            ['timeout' => 1800]
-        );
-
-        writeln('<info>URLs updated</info>');
-
-        writeln('<comment>Syncing uploads...</comment>');
-
-        runLocally(
-            "rsync -avhzrP {{remote_user}}@{{hostname}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/",
-            ['timeout' => 1800]
-        );
-
-        writeln('<info>Uploads synced</info>');
-
-        runLocally("wp rewrite flush");
-
-        writeln('<info>Permalinks flushed</info>');
-        writeln('<info>Sync complete</info>');
-    });
+    run("cd {$sharedPath} && ~/bin/wp cache flush --allow-root");
+    run("cd {$sharedPath} && ~/bin/wp rewrite flush --hard --allow-root");
+    writeln('<info>Database sync complete</info>');
 });
 
 // ==================================================================
@@ -329,7 +412,7 @@ task('composer:install', function () {
     $themePath = '{{release_path}}/{{theme_folder}}';
     $lsOutput = run('ls -lah ' . $themePath . ' || echo "[theme directory missing]"');
     writeln($lsOutput);
-    $realPath = run('cd ' . $themePath . ' && pwd || echo "[theme directory missing]"');
+    // $realPath = run('cd ' . $themePath . ' && pwd || echo "[theme directory missing]"');
     $composerExists = test('[ -f ' . $themePath . '/composer.json ]');
     if ($composerExists) {
         run('cd ' . $themePath . ' && composer install --no-dev --optimize-autoloader');
@@ -345,7 +428,7 @@ task('composer:install', function () {
  */
 task('wordpress:theme:symlink', function () {
     $wpThemeDir = '{{shared_path}}/{{sub_directory}}/{{theme_folder}}';
-    $deployerCurrent = '{{deploy_path}}/current';
+    $deployerCurrent = '{{deploy_path}}/current/{{theme_folder}}';
 
     run('mkdir -p ' . dirname($wpThemeDir));
 
