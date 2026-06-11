@@ -20,6 +20,9 @@ set('shared_dirs', []);
 set('shared_files', []);
 set('writable_dirs', []);
 
+set('local_wp_path', '/var/www/html');
+set('local_wp_binary', '/usr/local/bin/wp');
+
 // ==================================================================
 // Initial Preparation
 
@@ -113,14 +116,6 @@ task('syncfromremote', [
     'syncfromremote:assets'
 ]);
 
-task('syncfromremote:latest', [
-    'syncfromremote:confirm',
-    'sitehost:backup',
-    'syncfromremote:db',
-    'syncfromremote:plugins',
-    'syncfromremote:assets'
-]);
-
 task('sitehost:backup', function () {
     if (testLocally('[ -f /var/www/sitehost-api-key.txt ]')) {
         $config = file_get_contents('/var/www/sitehost-api-key.txt');
@@ -209,38 +204,50 @@ task('savefromremote:db', function () {
 });
 
 task('syncfromremote:db', function () {
-    $remoteUser = get('remote_user');
-    $hostname   = get('hostname');
-    $sharedPath = get('shared_path');
-    $localUrl   = 'http://' . get('local_url');
+    $remoteUser  = get('remote_user');
+    $hostname    = get('hostname');
+    $sharedPath  = get('shared_path');
+    $localUrl    = 'http://' . get('local_url');
+    $localWpPath = get('local_wp_path');
+    $localWp     = get('local_wp_binary');
 
-    $remoteUrl = trim(run("cd {$sharedPath} && wp option get siteurl --allow-root"));
-
+    writeln('<comment>Detecting remote URL...</comment>');
+    $remoteUrl = trim(run("cd {$sharedPath} && ~/bin/wp option get siteurl --allow-root"));
     writeln("<info>Remote URL: {$remoteUrl}</info>");
     writeln("<info>Local URL: {$localUrl}</info>");
+    writeln("<info>Local WP Path: {$localWpPath}</info>");
 
-    writeln('<comment>Syncing database...</comment>');
+    writeln('<comment>Exporting remote database and importing locally...</comment>');
     runLocally(
-        "ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && wp db export - --allow-root' | wp db import -",
+        "ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && ~/bin/wp db export - --allow-root' | {$localWp} db import - --path={$localWpPath}",
         ['timeout' => 1800]
     );
+    writeln('<info>Database imported</info>');
 
-    writeln('<comment>Running search-replace...</comment>');
+    writeln('<comment>Running search-replace: ' . $remoteUrl . ' → ' . $localUrl . '...</comment>');
     runLocally(
-        "wp search-replace '{$remoteUrl}' '{$localUrl}' --all-tables --precise --skip-columns=guid",
+        "{$localWp} search-replace '{$remoteUrl}' '{$localUrl}' --all-tables --precise --skip-columns=guid --path={$localWpPath}",
         ['timeout' => 1800]
     );
+    writeln('<info>Search-replace complete</info>');
 
-    runLocally("wp cache flush");
-    runLocally("wp rewrite flush --hard");
+    writeln('<comment>Flushing cache...</comment>');
+    runLocally("{$localWp} cache flush --path={$localWpPath}");
+
+    writeln('<comment>Flushing rewrite rules...</comment>');
+    runLocally("{$localWp} rewrite flush --hard --path={$localWpPath}");
+
+    // If template parts are missing images/buttons, the wp_theme term may be mismatched.
+    // Run manually: /usr/local/bin/wp post list --post_type=wp_template_part --format=ids --path=/var/www/html | xargs -I {} /usr/local/bin/wp post term set {} wp_theme electra --path=/var/www/html
+
     writeln('<info>Database sync complete</info>');
 });
 
 task('savefromremote:assets', function () {
     writeln('<info>Save assets from SiteHost</info>');
-    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/</comment>');
+    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./from-remote/uploads/</comment>');
     //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
-    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./wp-content/uploads/', ['timeout' => 1800]);
+    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/uploads/ ./from-remote/uploads/', ['timeout' => 1800]);
     writeln('<info>Done!</info>');
 });
 
@@ -257,9 +264,9 @@ task('syncfromremote:assets', function () {
 
 task('savefromremote:plugins', function () {
     writeln('<info>Save plugins from SiteHost</info>');
-    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/</comment>');
+    writeln('<comment>Running rsync command rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./from-remote/plugins/</comment>');
     //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
-    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/', ['timeout' => 1800]);
+    runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./from-remote/plugins/', ['timeout' => 1800]);
     writeln('<info>Done!</info>');
 });
 
@@ -341,6 +348,8 @@ task('synctoremote:db', function () {
     $hostname   = get('hostname');
     $sharedPath = get('shared_path');
     $localUrl   = 'http://' . get('local_url');
+    $localWp    = get('local_wp_binary');
+    $localWpPath = get('local_wp_path');
     $remoteUrl  = 'https://' . get('site_url');
 
     writeln("<info>Local URL: {$localUrl}</info>");
@@ -348,18 +357,18 @@ task('synctoremote:db', function () {
 
     writeln('<comment>Exporting local database and importing to remote...</comment>');
     runLocally(
-        "wp db export - | ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && wp db import - --allow-root'",
+        "{$localWp} db export - --path={$localWpPath} | ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && ~/bin/wp db import - --allow-root'",
         ['timeout' => 1800]
     );
 
     writeln('<comment>Running search-replace on remote...</comment>');
     run(
-        "cd {$sharedPath} && wp search-replace '{$localUrl}' '{$remoteUrl}' --all-tables --precise --skip-columns=guid --allow-root",
+        "cd {$sharedPath} && ~/bin/wp search-replace '{$localUrl}' '{$remoteUrl}' --all-tables --precise --skip-columns=guid --allow-root",
         ['timeout' => 1800]
     );
 
-    run("cd {$sharedPath} && wp cache flush --allow-root");
-    run("cd {$sharedPath} && wp rewrite flush --hard --allow-root");
+    run("cd {$sharedPath} && ~/bin/wp cache flush --allow-root");
+    run("cd {$sharedPath} && ~/bin/wp rewrite flush --hard --allow-root");
     writeln('<info>Database sync complete</info>');
 });
 
