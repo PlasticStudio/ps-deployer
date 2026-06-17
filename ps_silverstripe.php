@@ -147,7 +147,8 @@ task('sitehost:restart', function () {
     //check restart mode
     if (get('sitehost_restart_mode') == 'apache-php') {
         writeln('<info>Restarting apache & php</info>');
-        run('supervisorctl restart apache2 php');
+        // run('supervisorctl restart apache2 php');
+        run('supervisorctl signal SIGUSR1 apache2');
         return;
     }
 
