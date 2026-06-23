@@ -145,9 +145,16 @@ task('sitehost:listreleases', function () {
 task('sitehost:restart', function () {
 
     //check restart mode
-    if (get('sitehost_restart_mode') == 'apache-php') {
+    if (get('sitehost_restart_mode') == 'restart-apache-php') {
         writeln('<info>Restarting apache & php</info>');
-        // run('supervisorctl restart apache2 php');
+        run('supervisorctl restart apache2 php');
+        return;
+    }
+
+    if (get('sitehost_restart_mode') == 'signal-apache-php') {
+        writeln('<info>signal SIGUSR2 php</info>');
+        run('supervisorctl signal SIGUSR2 php');
+        writeln('<info>signal SIGUSR1 apache2</info>');
         run('supervisorctl signal SIGUSR1 apache2');
         return;
     }
