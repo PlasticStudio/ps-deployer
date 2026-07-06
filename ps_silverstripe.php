@@ -18,7 +18,7 @@ set('shared_path', '/container/application/shared');
 set('sitehost_restart_mode', 'container'); //This can also be set to apache
 
 /**
- * Sitehost - this is the upgrade script from mysql 5.7 to 8
+ * Sitehost - this is the upgrade script from mysql 8 to 8.4
  * This will immediately make the changes to the environment
  */
 task('sitehost:upgrade-mysql', function () {
@@ -32,18 +32,18 @@ task('sitehost:upgrade-mysql', function () {
     writeln('mkdir to save contents - {{upgrade_path}}');
     run(" mkdir -p {{upgrade_path}}");
     writeln('Export using .env details');
-    run("cd {{shared_path}} && export $(grep -v '^#' .env | xargs) && mysqldump -u \$SS_DATABASE_USERNAME -p\$SS_DATABASE_PASSWORD -h \$SS_DATABASE_SERVER --column-statistics=0 --no-tablespaces \$SS_DATABASE_NAME > {{upgrade_path}}/mysql57-backup.sql");
+    run("cd {{shared_path}} && export $(grep -v '^#' .env | xargs) && mysqldump -u \$SS_DATABASE_USERNAME -p\$SS_DATABASE_PASSWORD -h \$SS_DATABASE_SERVER --column-statistics=0 --no-tablespaces \$SS_DATABASE_NAME > {{upgrade_path}}/mysql8-backup.sql");
     writeln('Finished exporting db');
 
     //2) Set up new db fields
-    $env_SS_DATABASE_SERVER = ask('SS_DATABASE_SERVER', 'mysql8');
+    $env_SS_DATABASE_SERVER = ask('SS_DATABASE_SERVER', 'mysql84');
     $env_SS_DATABASE_NAME = ask('SS_DATABASE_NAME');
     $env_SS_DATABASE_USERNAME = ask('SS_DATABASE_USERNAME');
     $env_SS_DATABASE_PASSWORD = ask('SS_DATABASE_PASSWORD');
 
     //3) Import into new db
     writeln('Import db into new '.$env_SS_DATABASE_SERVER.' - '.$env_SS_DATABASE_NAME);
-    run("mysql -u ".$env_SS_DATABASE_USERNAME." -p'".$env_SS_DATABASE_PASSWORD."' -h ".$env_SS_DATABASE_SERVER." ".$env_SS_DATABASE_NAME." < {{upgrade_path}}/mysql57-backup.sql");
+    run("mysql -u ".$env_SS_DATABASE_USERNAME." -p'".$env_SS_DATABASE_PASSWORD."' -h ".$env_SS_DATABASE_SERVER." ".$env_SS_DATABASE_NAME." < {{upgrade_path}}/mysql8-backup.sql");
 
     //4) make backup of .env and update .env file
     writeln('Backup current .env to {{upgrade_path}}/.env.backup');
