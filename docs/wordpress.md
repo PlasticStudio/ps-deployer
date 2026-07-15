@@ -24,7 +24,7 @@ Modifies `wp-config.php` on the remote server. Comments out `WP_DEBUG` and adds 
 Downloads the uploads folder from the remote server to your local machine.
 
 **`dep syncfromremote`**
-Pulls a full copy of a remote environment down to your local machine. Prompts you to choose an environment, then syncs the database, runs a URL search-replace, and rsyncs uploads. Requires `local_url` to be set in your host config.
+Pulls a full copy of a remote environment down to your local machine. Prompts you to choose an environment, then syncs the database, runs a URL search-replace, and rsyncs plugins, themes, and uploads. The configured `theme_folder` is excluded from the themes sync so local child theme development is preserved. Requires `local_url` to be set in your host config.
 
 ---
 

@@ -158,6 +158,7 @@ task('syncfromremote', [
     'syncfromremote:confirm',
     'syncfromremote:db',
     'syncfromremote:plugins',
+    'syncfromremote:themes',
     'syncfromremote:assets'
 ]);
 
@@ -234,7 +235,9 @@ task('sitehost:backup', function () {
 });
 
 task('syncfromremote:confirm', function () {
-    if (!askConfirmation('This will OVERWRITE your LOCAL database, plugins and uploads. Continue?')) {
+    $themeFolder = get('theme_folder');
+
+    if (!askConfirmation("This will OVERWRITE your LOCAL database, plugins, themes except {$themeFolder}, and uploads. Continue?")) {
         writeln('Aborting sync.');
         throw new GracefulShutdownException('User aborted the sync.');
     }
@@ -326,6 +329,24 @@ task('syncfromremote:plugins', function () {
     runLocally('rm -rf ./wp-content/plugins/*');
     //-a, –archive | -v, –verbose | -h, –human-readable | -z, –compress | r, –recursive | -P,  --partial and --progress
     runLocally('rsync -avhzrP {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/plugins/ ./wp-content/plugins/', ['timeout' => 1800]);
+    writeln('<info>Done!</info>');
+});
+
+task('syncfromremote:themes', function () {
+    $themeFolder = trim(get('theme_folder'));
+
+    if ($themeFolder === '') {
+        throw new GracefulShutdownException('theme_folder must be set before syncing themes from remote.');
+    }
+
+    $themeExclude = escapeshellarg(rtrim($themeFolder, '/') . '/');
+
+    writeln('<info>Save themes from SiteHost</info>');
+    writeln("<comment>Note: These replace your local wp-content/themes directory except {$themeFolder}</comment>");
+    writeln("<comment>Running rsync command rsync -avhzrP --delete --exclude={$themeExclude} {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/themes/ ./wp-content/themes/</comment>");
+    runLocally('mkdir -p ./wp-content/themes');
+    // --delete removes local themes that no longer exist remotely while rsync's exclude protects the local child theme.
+    runLocally("rsync -avhzrP --delete --exclude={$themeExclude} {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/themes/ ./wp-content/themes/", ['timeout' => 1800]);
     writeln('<info>Done!</info>');
 });
 
