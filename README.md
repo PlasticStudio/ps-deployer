@@ -191,6 +191,19 @@ Saves the most recent backup i.e. previous nights Assets
 Makes a temporary copy of current live assets, rolls back to this if there is a transfer issue.
 `loadtoremote:assets`
 
+### WordPress database sync
+
+WordPress sync tasks skip common large log/cache/security plugin tables during `syncfromremote:db` and `synctoremote:db`.
+
+To add per-site tables, set `skip_tables` in your `deploy.php`. These are merged with the default WordPress skip list, not used as a replacement. Table names must be exact; wildcards are not supported.
+
+```
+set('skip_tables', [
+    'wp_custom_log_table',
+    'wp_another_large_table',
+]);
+```
+
 
 Whenever you deploy to sitehost, it will update teh symlink, apache needs to be restarted in order for this to take effect.
 All deployments run `sitehost:restart` which will restart the container. 
