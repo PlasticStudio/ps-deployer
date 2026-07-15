@@ -339,13 +339,13 @@ task('syncfromremote:themes', function () {
         throw new GracefulShutdownException('theme_folder must be set before syncing themes from remote.');
     }
 
-    $themeExclude = escapeshellarg(rtrim($themeFolder, '/') . '/');
+    $themeExclude = escapeshellarg('/' . trim($themeFolder, '/'));
 
     writeln('<info>Save themes from SiteHost</info>');
     writeln("<comment>Note: These replace your local wp-content/themes directory except {$themeFolder}</comment>");
     writeln("<comment>Running rsync command rsync -avhzrP --delete --exclude={$themeExclude} {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/themes/ ./wp-content/themes/</comment>");
     runLocally('mkdir -p ./wp-content/themes');
-    // --delete removes local themes that no longer exist remotely while rsync's exclude protects the local child theme.
+    // Exclude by name, not directory path, because deployed themes may be symlinked on the remote.
     runLocally("rsync -avhzrP --delete --exclude={$themeExclude} {{remote_user}}@{{alias}}:{{shared_path}}/wp-content/themes/ ./wp-content/themes/", ['timeout' => 1800]);
     writeln('<info>Done!</info>');
 });
