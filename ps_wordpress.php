@@ -20,8 +20,53 @@ set('shared_dirs', []);
 set('shared_files', []);
 set('writable_dirs', []);
 
+set('default_skip_tables', [
+    'wp_actionscheduler_actions',
+    'wp_actionscheduler_claims',
+    'wp_actionscheduler_groups',
+    'wp_actionscheduler_logs',
+    'wp_wfauditevents',
+    'wp_wfblockediplog',
+    'wp_wfblocks7',
+    'wp_wfconfig',
+    'wp_wfcrawlers',
+    'wp_wffilechanges',
+    'wp_wffilemods',
+    'wp_wfhits',
+    'wp_wfhoover',
+    'wp_wfissues',
+    'wp_wfknownfilelist',
+    'wp_wflivetraffichuman',
+    'wp_wflocs',
+    'wp_wflogins',
+    'wp_wfnotifications',
+    'wp_wfpendingissues',
+    'wp_wfreversecache',
+    'wp_wfsecurityevents',
+    'wp_wfsnipcache',
+    'wp_wfstatus',
+    'wp_wftrafficrates',
+    'wp_wfwaffailures',
+]);
+set('skip_tables', []);
+
 set('local_wp_path', '/var/www/html');
 set('local_wp_binary', '/usr/local/bin/wp');
+
+function buildSkipTablesOption()
+{
+    $tables = array_merge(
+        get('default_skip_tables'),
+        get('skip_tables')
+    );
+    $tables = array_values(array_unique(array_filter(array_map('trim', $tables))));
+
+    if (empty($tables)) {
+        return '';
+    }
+
+    return '--exclude_tables=' . escapeshellarg(implode(',', $tables));
+}
 
 // ==================================================================
 // Initial Preparation
@@ -217,9 +262,12 @@ task('syncfromremote:db', function () {
     writeln("<info>Local URL: {$localUrl}</info>");
     writeln("<info>Local WP Path: {$localWpPath}</info>");
 
+    $skipTablesOption = buildSkipTablesOption();
+
     writeln('<comment>Exporting remote database and importing locally...</comment>');
+    $exportCommand = "ssh {$remoteUser}@{$hostname} \"cd {$sharedPath} && ~/bin/wp db export - --allow-root {$skipTablesOption}\"";
     runLocally(
-        "ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && ~/bin/wp db export - --allow-root' | {$localWp} db import - --path={$localWpPath}",
+        $exportCommand . " | {$localWp} db import - --path={$localWpPath}",
         ['timeout' => 1800]
     );
     writeln('<info>Database imported</info>');
@@ -293,7 +341,7 @@ task('synctoremote', [
 task('synctoremote:confirm', function () {
     $siteUrl = get('site_url');
     $input = ask("You are about to OVERWRITE the REMOTE database, plugins and uploads on {$siteUrl}. Type the site URL to confirm: ");
-    
+
     if (trim($input) !== $siteUrl) {
         writeln('<error>Input did not match. Aborting.</error>');
         throw new GracefulShutdownException('User aborted the sync.');
@@ -355,9 +403,11 @@ task('synctoremote:db', function () {
     writeln("<info>Local URL: {$localUrl}</info>");
     writeln("<info>Remote URL: {$remoteUrl}</info>");
 
+    $skipTablesOption = buildSkipTablesOption();
+
     writeln('<comment>Exporting local database and importing to remote...</comment>');
     runLocally(
-        "{$localWp} db export - --path={$localWpPath} | ssh {$remoteUser}@{$hostname} 'cd {$sharedPath} && ~/bin/wp db import - --allow-root'",
+        "{$localWp} db export - --path={$localWpPath} {$skipTablesOption} | ssh {$remoteUser}@{$hostname} \"cd {$sharedPath} && ~/bin/wp db import - --allow-root\"",
         ['timeout' => 1800]
     );
 
