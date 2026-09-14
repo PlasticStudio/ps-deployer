@@ -5,6 +5,7 @@ namespace Deployer;
 use Deployer\Exception\GracefulShutdownException;
 
 require 'recipe/common.php';
+require __DIR__ . '/ps_base.php';
 
 // set('dotenv', '{{current_path}}/.env');
 set('keep_releases', 5);
@@ -67,7 +68,7 @@ task('sitehost:upgrade-mysql:rollback', function () {
 task('sitehost:prepare', [
     'sitehost:symlink',
     'sitehost:ssh',
-    'sitehost:phpconfig',
+    'sitehost:sync-config',
     'sitehost:listreleases'
 ]);
 
@@ -109,23 +110,6 @@ task('sitehost:ssh', function () {
         writeln('ssh key found - skipping');
         run('cat ~/.ssh/id_rsa.pub', ['real_time_output' => true]);
         writeln('Copy this key to the projects deploy keys on github');
-    }
-});
-
-/**
- * Sitehost
- */
-task('sitehost:phpconfig', function () {
-    //Update php config to default
-    if (test('[ ! -f ~/container/config/php/conf.d/ps-custom.ini ]')) {
-        writeln('No default custom php has been configured');
-        writeln('Creating "~/container/config/php/conf.d/ps-custom.ini" and adding defaults');
-        run('echo "memory_limit=512M" >> ~/container/config/php/conf.d/ps-custom.ini');
-        //TODO: POST_MAX
-        //TODO: EXECUTION TIME
-        //TODO: UPLOAD_MAX
-    } else {
-        writeln('php has been configured - skipping');
     }
 });
 
@@ -499,6 +483,7 @@ task('deploy', [
     // TODO: check if required 'deploy:clear_paths',
     'silverstripe:buildflush',
     'deploy:publish',
+    'sitehost:sync-config',
     'sitehost:restart'
 ]);
 

@@ -520,6 +520,7 @@ task('deploy', [
     'deploy:publish',
     'wordpress:theme:symlink',
     'composer:install',
+    'sitehost:sync-config',
 ]);
 
 after('deploy:failed', 'deploy:unlock');

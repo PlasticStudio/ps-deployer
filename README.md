@@ -115,6 +115,7 @@ host('uat.domain.co.nz')
     ->set('remote_user', 'uatuser')
     ->set('sitehost_server_name', 'ch-xxx')
     ->set('sitehost_stack_name', 'xxxxxxxxx')
+    ->set('php_config', ['post_max_size' => '100M']) //Optional
     ->set('sitehost_restart_mode', 'apache-php'); //Optional
 
 
@@ -208,8 +209,14 @@ set('skip_tables', [
 Whenever you deploy to sitehost, it will update teh symlink, apache needs to be restarted in order for this to take effect.
 All deployments run `sitehost:restart` which will restart the container. 
 A new option which is better is to set the `sitehost_restart_mode` to `apache-php` in your deploy.php file. This will restart the apache and php only and not the whole container.
-This is only available on certain containers. 
+This is only available on certain containers.
 `->set('sitehost_restart_mode', 'apache-php');`
+
+PHP settings can optionally be configured per host. Deployments synchronise only
+the listed values to `/container/config/php/php.ini` before restarting, and leave
+the file untouched when those values already match.
+
+`->set('php_config', ['post_max_size' => '100M']);`
 
 
 ### Docker

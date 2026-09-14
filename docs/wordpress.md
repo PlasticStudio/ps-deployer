@@ -31,4 +31,10 @@ Pulls a full copy of a remote environment down to your local machine. Prompts yo
 ## Deployment
 
 **`dep deploy`**
-Deploys the theme to the server. On production, you will be asked to confirm before anything runs. Uploads `wp-config-env.php`, runs the standard Deployer release steps, and creates a symlink from the theme directory to the current release.
+Deploys the theme to the server. On production, you will be asked to confirm before anything runs. Uploads `wp-config-env.php`, runs the standard Deployer release steps, creates a symlink from the theme directory to the current release, and synchronises optional `php_config` values to `/container/config/php/php.ini`.
+
+PHP settings can be configured per host and are only written when they differ:
+
+```php
+->set('php_config', ['post_max_size' => '100M'])
+```
